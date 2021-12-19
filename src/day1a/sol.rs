@@ -1,10 +1,7 @@
-use std::path::Path;
-use std::fs;
+use crate::utils;
 
 pub fn ans() {
-    let this_file = Path::new(file!()).parent().unwrap().join("input.txt");
-    println!("Trying to read from: {}", this_file.display());
-    let contents = fs::read_to_string(&this_file).expect("Unable to load file");
+    let contents = utils::read_file("input.txt", file!());
     let str_lines = contents.lines();
     let ints = str_lines.map(|s| s.parse::<i32>().unwrap());
     let mut counter = 0;
