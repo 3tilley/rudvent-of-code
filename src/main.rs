@@ -1,9 +1,10 @@
 //use crate::day1a;
-mod day1a;
+mod day1;
+mod day2;
+mod day3;
 mod utils;
 
 fn main() {
-    day1a::sol::ans();
-    println!("Hello, world!");
+    let answer = day3::sol::a();
+    println!("Answer: {:?}", answer);
 }
-
