@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 bounded-vec-deque = "0.1"
+terminal-clipboard = "0.3"

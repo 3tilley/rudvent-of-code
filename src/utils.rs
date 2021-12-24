@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, io};
 use std::path::Path;
 
 pub fn read_file(name: &str, relative_to: &str) -> String {
@@ -12,4 +12,13 @@ pub fn read_file(name: &str, relative_to: &str) -> String {
     println!("Trying to read from: {}", this_file.display());
     let contents = fs::read_to_string(&this_file).expect("Unable to load file");
     contents
+}
+
+pub fn ask_bool_input() -> bool {
+    let mut answer = String::new();
+    let yeses = vec!["yes".to_string(), "y".to_string()];
+    println!("Copy answer to clipboard? [yN]: ");
+    io::stdin().read_line(&mut answer);
+    println!("{}", answer);
+    yeses.contains(&answer.trim().to_lowercase())
 }

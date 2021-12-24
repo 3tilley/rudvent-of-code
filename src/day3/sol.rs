@@ -1,8 +1,30 @@
+use std::fmt;
 use crate::utils;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Diagnostic {
     items: Vec<bool>
+}
+
+impl fmt::Debug for Diagnostic {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut ls = String::new();
+        for &c in &self.items {
+            if c {
+                ls.push('1');
+            } else {
+                ls.push('0');
+            }
+        }
+        let least_num = isize::from_str_radix(&*ls, 2).unwrap() as i32;
+        write!(f, "{} ({})", ls, least_num)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -30,8 +52,8 @@ fn split_line(s: &str) -> Diagnostic {
     let mut items: Vec<bool> = Vec::new();
     for c in chars {
         match c {
-            '0' => items.push(true),
-            '1' => items.push(false),
+            '0' => items.push(false),
+            '1' => items.push(true),
             _ => panic!("Unexpected value: {}", c),
         }
     }
@@ -90,17 +112,48 @@ pub fn b() -> i32 {
     let mut most: Vec<Diagnostic> = bools.to_vec();
     let mut least: Vec<Diagnostic> = most.to_vec();
 
-    let half = (&bools.len() + 1) / 2;
+    println!("{:?}", most);
+    println!("{:?}", least);
+
     for (i, &c) in counts.items.iter().enumerate() {
-        let ones_common = c >= (half as i32);
+        let mut least_counts = Counts{items: Vec::new()};
+        for d in &least {
+            for (i, &v) in d.items.iter().enumerate() {
+                if v == true {
+                    least_counts.add_count(i);
+                }
+            }
+        }
+        let mut most_counts = Counts{items: Vec::new()};
+        for d in &most {
+            for (i, &v) in d.items.iter().enumerate() {
+                if v == true {
+                    most_counts.add_count(i);
+                }
+            }
+        }
+        let least_half = (&least.len() + 1) / 2;
+        let most_half = (&most.len() + 1) / 2;
+        println!("{}", least_half);
+        println!("{}", most_half);
         match most_num {
-            None => most = most.clone().iter().filter(|x| x.items[i] == ones_common).collect(),
+            None => {
+                let most_ones_common = most_counts.items[i] >= (most_half as i32);
+                println!("{}", most_ones_common);
+                most = most.into_iter().filter(|x| x.items[i] == most_ones_common).collect();
+            }
             _ => (),
         }
         match least_num {
-            None => least = least.iter().filter(|x| x.items[i] != ones_common).collect(),
+            None =>{
+                let least_ones_common = least_counts.items[i] >= (least_half as i32);
+                println!("{}", least_ones_common);
+                least = least.into_iter().filter(|x| x.items[i] != least_ones_common).collect();
+            },
             _ => (),
         }
+        println!("Most: {:?}", most);
+        println!("Least: {:?}", least);
 
         if most.len() == 0 {
             panic!("{}", most.len());
