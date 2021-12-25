@@ -112,9 +112,6 @@ pub fn b() -> i32 {
     let mut most: Vec<Diagnostic> = bools.to_vec();
     let mut least: Vec<Diagnostic> = most.to_vec();
 
-    println!("{:?}", most);
-    println!("{:?}", least);
-
     for (i, &c) in counts.items.iter().enumerate() {
         let mut least_counts = Counts{items: Vec::new()};
         for d in &least {
@@ -134,12 +131,9 @@ pub fn b() -> i32 {
         }
         let least_half = (&least.len() + 1) / 2;
         let most_half = (&most.len() + 1) / 2;
-        println!("{}", least_half);
-        println!("{}", most_half);
         match most_num {
             None => {
                 let most_ones_common = most_counts.items[i] >= (most_half as i32);
-                println!("{}", most_ones_common);
                 most = most.into_iter().filter(|x| x.items[i] == most_ones_common).collect();
             }
             _ => (),
@@ -147,13 +141,10 @@ pub fn b() -> i32 {
         match least_num {
             None =>{
                 let least_ones_common = least_counts.items[i] >= (least_half as i32);
-                println!("{}", least_ones_common);
                 least = least.into_iter().filter(|x| x.items[i] != least_ones_common).collect();
             },
             _ => (),
         }
-        println!("Most: {:?}", most);
-        println!("Least: {:?}", least);
 
         if most.len() == 0 {
             panic!("{}", most.len());

@@ -4,10 +4,11 @@ use std::ascii::escape_default;
 mod day1;
 mod day2;
 mod day3;
+mod day4;
 mod utils;
 
 fn main() {
-    let answer = day3::sol::b();
+    let answer = day4::sol::a();
     println!("Answer: {:?}", answer);
     if utils::ask_bool_input() {
         terminal_clipboard::set_string(answer.to_string());
