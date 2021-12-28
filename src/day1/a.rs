@@ -3,7 +3,7 @@ use ::bounded_vec_deque::BoundedVecDeque;
 pub fn ans_a() -> i32 {
     let contents = utils::read_file("input.txt", file!());
     let str_lines = contents.lines();
-    let ints : Vec<_> = str_lines.map(|s| s.parse::<i32>().unwrap()).collect();
+    let ints: Vec<_> = str_lines.map(|s| s.parse::<i32>().unwrap()).collect();
     let mut counter = 0;
     let mut last_depth = None;
     for depth in ints {
@@ -20,10 +20,10 @@ pub fn ans_b() -> i32 {
     let buffer_len = 3;
     let contents = utils::read_file("input.txt", file!());
     let str_lines = contents.lines();
-    let ints : Vec<_> = str_lines.map(|s| s.parse::<i32>().unwrap()).collect();
+    let ints: Vec<_> = str_lines.map(|s| s.parse::<i32>().unwrap()).collect();
 
     let mut counter = 0;
-    let mut buffer : BoundedVecDeque<i32> = BoundedVecDeque::new(buffer_len);
+    let mut buffer: BoundedVecDeque<i32> = BoundedVecDeque::new(buffer_len);
     let (left, right) = ints.split_at(buffer_len);
 
     for &d in left {

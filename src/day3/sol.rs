@@ -1,9 +1,9 @@
-use std::fmt;
 use crate::utils;
+use std::fmt;
 
 #[derive(Clone)]
 struct Diagnostic {
-    items: Vec<bool>
+    items: Vec<bool>,
 }
 
 impl fmt::Debug for Diagnostic {
@@ -29,7 +29,7 @@ impl fmt::Display for Diagnostic {
 
 #[derive(Debug, Clone)]
 struct Counts {
-    items: Vec<i32>
+    items: Vec<i32>,
 }
 
 impl Counts {
@@ -44,7 +44,7 @@ impl Counts {
 }
 
 fn split_line(s: &str) -> Diagnostic {
-    let chars : Vec<_> = s.chars().collect();
+    let chars: Vec<_> = s.chars().collect();
     if chars.len() < 2 {
         panic!("Didn't split example well: {:?}", &chars);
     }
@@ -57,15 +57,14 @@ fn split_line(s: &str) -> Diagnostic {
             _ => panic!("Unexpected value: {}", c),
         }
     }
-    Diagnostic{items }
-
+    Diagnostic { items }
 }
 
 pub fn a() -> i32 {
     let contents = utils::read_file("input.txt", file!());
     let str_lines = contents.lines();
-    let bools : Vec<Diagnostic> = str_lines.map(split_line).collect();
-    let mut counts = Counts{items: Vec::new()};
+    let bools: Vec<Diagnostic> = str_lines.map(split_line).collect();
+    let mut counts = Counts { items: Vec::new() };
 
     for d in &bools {
         for (i, &v) in d.items.iter().enumerate() {
@@ -95,8 +94,8 @@ pub fn a() -> i32 {
 pub fn b() -> i32 {
     let contents = utils::read_file("input.txt", file!());
     let str_lines = contents.lines();
-    let bools : Vec<Diagnostic> = str_lines.map(split_line).collect();
-    let mut counts = Counts{items: Vec::new()};
+    let bools: Vec<Diagnostic> = str_lines.map(split_line).collect();
+    let mut counts = Counts { items: Vec::new() };
 
     for d in &bools {
         for (i, &v) in d.items.iter().enumerate() {
@@ -106,14 +105,14 @@ pub fn b() -> i32 {
         }
     }
 
-    let mut most_num : Option<i32> = None;
-    let mut least_num : Option<i32> = None;
+    let mut most_num: Option<i32> = None;
+    let mut least_num: Option<i32> = None;
 
     let mut most: Vec<Diagnostic> = bools.to_vec();
     let mut least: Vec<Diagnostic> = most.to_vec();
 
     for (i, &c) in counts.items.iter().enumerate() {
-        let mut least_counts = Counts{items: Vec::new()};
+        let mut least_counts = Counts { items: Vec::new() };
         for d in &least {
             for (i, &v) in d.items.iter().enumerate() {
                 if v == true {
@@ -121,7 +120,7 @@ pub fn b() -> i32 {
                 }
             }
         }
-        let mut most_counts = Counts{items: Vec::new()};
+        let mut most_counts = Counts { items: Vec::new() };
         for d in &most {
             for (i, &v) in d.items.iter().enumerate() {
                 if v == true {
@@ -134,15 +133,21 @@ pub fn b() -> i32 {
         match most_num {
             None => {
                 let most_ones_common = most_counts.items[i] >= (most_half as i32);
-                most = most.into_iter().filter(|x| x.items[i] == most_ones_common).collect();
+                most = most
+                    .into_iter()
+                    .filter(|x| x.items[i] == most_ones_common)
+                    .collect();
             }
             _ => (),
         }
         match least_num {
-            None =>{
+            None => {
                 let least_ones_common = least_counts.items[i] >= (least_half as i32);
-                least = least.into_iter().filter(|x| x.items[i] != least_ones_common).collect();
-            },
+                least = least
+                    .into_iter()
+                    .filter(|x| x.items[i] != least_ones_common)
+                    .collect();
+            }
             _ => (),
         }
 
@@ -174,7 +179,6 @@ pub fn b() -> i32 {
             }
             least_num = Some(isize::from_str_radix(&*ls, 2).unwrap() as i32);
         }
-
     }
 
     (most_num.unwrap() * least_num.unwrap()) as i32

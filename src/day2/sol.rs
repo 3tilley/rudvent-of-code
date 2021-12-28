@@ -23,9 +23,9 @@ fn split_str(str: &str) -> Direction {
 pub fn a() -> i32 {
     let contents = utils::read_file("input.txt", file!());
     let str_lines = contents.lines();
-    let directions : Vec<_> = str_lines.map(split_str).collect();
-    let mut horizontal : i32 = 0;
-    let mut vertical : i32 = 0;
+    let directions: Vec<_> = str_lines.map(split_str).collect();
+    let mut horizontal: i32 = 0;
+    let mut vertical: i32 = 0;
 
     for d in directions {
         match d {
@@ -42,10 +42,10 @@ pub fn a() -> i32 {
 pub fn b() -> i32 {
     let contents = utils::read_file("input.txt", file!());
     let str_lines = contents.lines();
-    let directions : Vec<_> = str_lines.map(split_str).collect();
-    let mut horizontal : i32 = 0;
-    let mut vertical : i32 = 0;
-    let mut aim : i32 = 0;
+    let directions: Vec<_> = str_lines.map(split_str).collect();
+    let mut horizontal: i32 = 0;
+    let mut vertical: i32 = 0;
+    let mut aim: i32 = 0;
 
     for d in directions {
         match d {
@@ -54,7 +54,7 @@ pub fn b() -> i32 {
             Direction::Forward(a) => {
                 horizontal += a;
                 vertical += aim * a;
-            },
+            }
         }
     }
     let ans = horizontal * vertical;
