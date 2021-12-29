@@ -11,14 +11,8 @@ pub struct Vent {
 }
 
 impl Vent {
-    fn xs(&self) -> Vec<u32> {
-        (min(self.start.0, self.end.0)..(max(self.start.0, self.end.0))+1).collect()
-    }
-    fn ys(&self) -> Vec<u32> {
-        (min(self.start.1, self.end.1)..(max(self.start.1, self.end.1))+1).collect()
-    }
     fn points(&self) -> Vec<(u32, u32)> {
-        let (x_diff, y_diff, len) = match (self.start.0 as i32 - self.end.0 as i32, self.start.1 as i32 - self.end.1 as i32) {
+        let (x_diff, y_diff, len) = match (self.end.0 as i32 - self.start.0 as i32, self.end.1 as i32 - self.start.1 as i32) {
             (0, diff) => {
                 (0, diff / diff.abs(), diff.abs())
             }
@@ -36,7 +30,7 @@ impl Vent {
         let mut output = Vec::new();
         let start_x = self.start.0 as i32;
         let start_y = self.start.1 as i32;
-        for i in 0..len {
+        for i in 0..len+1 {
             output.push(((start_x + (i * x_diff)) as u32, (start_y + (i * y_diff)) as u32));
         }
         output
@@ -75,18 +69,9 @@ impl Seafloor {
     fn fill_vent(&mut self, vent: Vent) {
         log::info!("{}", vent);
         log::info!("is_diagonal: {}", vent.is_diagonal());
-        if vent.is_diagonal() {
-            let ys = vent.ys();
-            for (i, &x) in vent.xs().iter().enumerate() {
-                *self.floor.get_mut(x as usize, ys[i] as usize).unwrap() += 1;
-            }
-
-        } else {
-            for x in vent.xs() {
-                for y in vent.ys() {
-                    *self.floor.get_mut(x as usize, y as usize).unwrap() += 1;
-                }
-            }
+        log::debug!("is_diagonal: {:?}", vent.points());
+        for (x, y) in vent.points() {
+            *self.floor.get_mut(x as usize, y as usize).unwrap() += 1;
         }
     }
     fn above_x(&self, depth: u32) -> usize {

@@ -6,6 +6,9 @@ mod day2;
 mod day3;
 mod day4;
 mod day5;
+mod day6;
+mod day7;
+mod day8;
 mod utils;
 
 fn main() {
@@ -35,7 +38,7 @@ fn main() {
         }
     };
 
-    let answer = day5::sol::b(input_file);
+    let answer = day8::sol::a(input_file);
     println!("Answer: {:?}", answer);
     if utils::ask_bool_input() {
         terminal_clipboard::set_string(answer.to_string());

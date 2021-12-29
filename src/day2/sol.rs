@@ -20,7 +20,7 @@ fn split_str(str: &str) -> Direction {
     }
 }
 
-pub fn a() -> i32 {
+pub fn a(x: &str) -> i32 {
     let contents = utils::read_file("input.txt", file!());
     let str_lines = contents.lines();
     let directions: Vec<_> = str_lines.map(split_str).collect();
