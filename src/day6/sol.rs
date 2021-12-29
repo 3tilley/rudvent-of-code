@@ -3,6 +3,7 @@ use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
 use std::process::Output;
+use chrono::{DateTime, Utc};
 use crate::utils;
 
 pub trait Numeric : Sized + Add<Self, Output = Self> + Copy + Display + Debug{
@@ -49,29 +50,29 @@ impl<T: Numeric> Fish<T> {
         for day in 0u32..9u32 {
             map.insert(day, Numeric::zero());
         }
-        log::debug!("{:?}", map);
+        //log::debug!("{:?}", map);
         for f in fish {
             let original : T = map[&f];
             let new_val = original + T::one();
             map.insert(f, new_val);
         }
-        log::debug!("{:?}", map);
+        //log::debug!("{:?}", map);
         Fish{map}
     }
 
     fn update(&mut self) {
         let new_fish = *self.map.get(&0u32).unwrap();
-        log::debug!("{:?}", new_fish);
+        //log::debug!("{:?}", new_fish);
         for day in 1u32..9u32 {
             let old = self.map.get(&day).unwrap();
             self.map.insert(day - 1, *old);
         }
-        log::debug!("{:?}", self.map);
+        //log::debug!("{:?}", self.map);
         self.map.insert(8,new_fish);
         let old_val = self.map[&6u32];
         let new_val = old_val.checked_add(new_fish).unwrap();
         self.map.insert(6u32, new_val).unwrap();
-        log::debug!("{:?}", self.map);
+        //log::debug!("{:?}", self.map);
     }
 
     fn num_fish(&self) -> T {
@@ -107,12 +108,16 @@ pub fn load_data(name: &str) -> Vec<u32> {
 
 pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     let input = load_data(name);
-    log::debug!("{:?}", input);
+    //log::debug!("{:?}", input);
+    let start : DateTime<Utc> = Utc::now();
     let mut fishes = Fish::new(input);
     for d in 0..days {
         fishes.update();
-        println!("{} | day {},  {:?}", fishes, d, fishes.num_fish());
+        //println!("{} | day {},  {:?}", fishes, d, fishes.num_fish());
     }
+    let duration = Utc::now() - start;
+
+    println!("{}us", duration.num_microseconds().unwrap());
     fishes.num_fish()
 }
 

@@ -1,5 +1,6 @@
 use clap::{App, Arg, Parser};
 use std::ascii::escape_default;
+use chrono::prelude::*;
 
 mod day1;
 mod day2;
@@ -38,7 +39,13 @@ fn main() {
         }
     };
 
-    let answer = day8::sol::a(input_file);
+
+    //let start : DateTime<Utc> = Utc::now();
+    let answer = day6::sol::b(input_file);
+    //let duration = Utc::now() - start;
+
+    //println!("{}us", duration.num_microseconds().unwrap());
+
     println!("Answer: {:?}", answer);
     if utils::ask_bool_input() {
         terminal_clipboard::set_string(answer.to_string());
