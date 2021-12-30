@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::fs;
+use std::path::Path;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
-use std::process::Output;
 use chrono::{DateTime, Utc};
-use crate::utils;
 
 pub trait Numeric : Sized + Add<Self, Output = Self> + Copy + Display + Debug{
     fn zero() -> Self;
@@ -93,7 +93,7 @@ impl<T: Numeric> fmt::Display for Fish<T> {
         }
         out_vec.sort_by_key(|x| x.0);
         let mut out_strings = Vec::new();
-        for (k, v) in out_vec {
+        for (_, v) in out_vec {
             out_strings.push(format!("{}", v));
         }
         let out_string : String = out_strings.join(" ");
@@ -101,8 +101,21 @@ impl<T: Numeric> fmt::Display for Fish<T> {
     }
 }
 
+pub fn read_file(name: &str, relative_to: &str) -> String {
+    let path = Path::new(relative_to);
+    let mut relative = path;
+    if path.is_file() {
+        relative = path.parent().unwrap();
+    }
+
+    let this_file = relative.join(name);
+    println!("Trying to read from: {}", this_file.display());
+    let contents = fs::read_to_string(&this_file).expect("Unable to load file");
+    contents
+}
+
 pub fn load_data(name: &str) -> Vec<u32> {
-    let contents = utils::read_file(name, file!());
+    let contents = read_file(name, file!());
     contents.trim().split(",").map(|x| x.parse::<u32>().unwrap()).collect()
 }
 
@@ -111,7 +124,7 @@ pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     //log::debug!("{:?}", input);
     let mut fishes = Fish::new(input);
     let start : DateTime<Utc> = Utc::now();
-    for d in 0..days {
+    for _ in 0..days {
         fishes.update();
         //println!("{} | day {},  {:?}", fishes, d, fishes.num_fish());
     }
@@ -127,4 +140,11 @@ pub fn a(name: &str) -> u32 {
 
 pub fn b(name: &str) -> u64 {
     ans(name, 256)
+}
+
+fn main() {
+
+    let answer = b("input.txt");
+
+    println!("Answer: {:?}", answer);
 }
