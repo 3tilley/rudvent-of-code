@@ -64,13 +64,14 @@ impl<T: Numeric> Fish<T> {
         let new_fish = *self.map.get(&0u32).unwrap();
         //log::debug!("{:?}", new_fish);
         for day in 1u32..9u32 {
-            let old = self.map.get(&day).unwrap();
-            self.map.insert(day - 1, *old);
+            let old = self.map[&day];
+            self.map.insert(day - 1, old);
         }
         //log::debug!("{:?}", self.map);
         self.map.insert(8,new_fish);
         let old_val = self.map[&6u32];
-        let new_val = old_val.checked_add(new_fish).unwrap();
+        //let new_val = old_val.checked_add(new_fish).unwrap();
+        let new_val = old_val.add(new_fish);
         self.map.insert(6u32, new_val).unwrap();
         //log::debug!("{:?}", self.map);
     }
@@ -109,8 +110,8 @@ pub fn load_data(name: &str) -> Vec<u32> {
 pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     let input = load_data(name);
     //log::debug!("{:?}", input);
-    let start : DateTime<Utc> = Utc::now();
     let mut fishes = Fish::new(input);
+    let start : DateTime<Utc> = Utc::now();
     for d in 0..days {
         fishes.update();
         //println!("{} | day {},  {:?}", fishes, d, fishes.num_fish());
