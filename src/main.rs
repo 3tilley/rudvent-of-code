@@ -1,5 +1,7 @@
 use clap::{App, Arg, Parser};
 use std::ascii::escape_default;
+use std::thread::sleep;
+use std::time::Duration;
 use chrono::prelude::*;
 
 mod day1;
@@ -41,7 +43,7 @@ fn main() {
 
 
     //let start : DateTime<Utc> = Utc::now();
-    let answer = day6::sol::b(input_file);
+    let answer = day6::sol::b("input.txt");
     //let duration = Utc::now() - start;
 
     //println!("{}us", duration.num_microseconds().unwrap());

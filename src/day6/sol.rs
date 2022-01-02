@@ -85,6 +85,47 @@ impl<T: Numeric> Fish<T> {
 
 }
 
+
+pub struct VecFish<T> where T: Numeric {
+    vec: Vec<T>,
+}
+
+impl<T: Numeric> VecFish<T> {
+    fn new(fish: Vec<u32>) -> VecFish<T> {
+        let mut vec: Vec<T> = vec![Numeric::zero(); 10];
+        //log::debug!("{:?}", map);
+        for f in fish {
+            let mut original = vec.get_mut(f as usize).unwrap();
+            *original = original.checked_add(T::one()).unwrap();
+        }
+        //log::debug!("{:?}", map);
+        VecFish{vec}
+    }
+
+    fn update(&mut self) {
+        let new_fish = self.vec[0 as usize];
+        for day in 1..8 {
+            let old = self.vec[day as usize];
+            self.vec.insert(day - 1, old);
+        }
+        //log::debug!("{:?}", self.map);
+        self.vec.insert(8,new_fish);
+        let old_val = self.vec[6];
+        //let new_val = old_val.checked_add(new_fish).unwrap();
+        let new_val = old_val.checked_add(new_fish).unwrap();
+        self.vec.insert(6, new_val);
+        //log::debug!("{:?}", self.map);
+    }
+
+    fn num_fish(&self) -> T {
+        let mut counter = T::zero();
+        for v in self.vec.iter() {
+            counter = counter.checked_add(*v).unwrap();
+        }
+        counter
+    }
+
+}
 impl<T: Numeric> fmt::Display for Fish<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut out_vec: Vec<(u32, T)> = Vec::new();
@@ -109,16 +150,20 @@ pub fn load_data(name: &str) -> Vec<u32> {
 pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     let input = load_data(name);
     //log::debug!("{:?}", input);
-    let mut fishes = Fish::new(input);
+    let mut fishes = VecFish::new(input);
     let start : DateTime<Utc> = Utc::now();
-    for d in 0..days {
-        fishes.update();
-        //println!("{} | day {},  {:?}", fishes, d, fishes.num_fish());
-    }
+    do_it(&mut fishes, days);
     let duration = Utc::now() - start;
 
     println!("{}us", duration.num_microseconds().unwrap());
     fishes.num_fish()
+}
+
+pub fn do_it<T: Numeric>(fish: &mut VecFish<T>, days: u32) {
+    for d in 0..days {
+        fish.update();
+        //println!("{} | day {},  {:?}", fishes, d, fishes.num_fish());
+    }
 }
 
 pub fn a(name: &str) -> u32 {
