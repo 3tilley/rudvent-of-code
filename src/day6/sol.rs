@@ -4,7 +4,9 @@ use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
 use std::process::Output;
 use chrono::{DateTime, Utc};
+use fxhash::{FxHasher, FxHashMap};
 use crate::utils;
+
 
 pub trait Numeric : Sized + Add<Self, Output = Self> + Copy + Display + Debug{
     fn zero() -> Self;
@@ -37,15 +39,16 @@ impl Numeric for u64 {
     }
 }
 
-struct Fish<T>
+pub struct Fish<T>
     where
         T: Numeric {
-    map: HashMap<u32, T>,
+    map: FxHashMap<u32, T>,
 }
 
 impl<T: Numeric> Fish<T> {
     fn new(fish: Vec<u32>) -> Fish<T> {
-        let mut map: HashMap<u32, T> = HashMap::new();
+        //let mut map: HashMap<u32, T> = HashMap::new();
+        let mut map = FxHashMap::default();
         for day in 0u32..9u32 {
             map.insert(day, Numeric::zero());
         }
@@ -150,7 +153,7 @@ pub fn load_data(name: &str) -> Vec<u32> {
 pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     let input = load_data(name);
     //log::debug!("{:?}", input);
-    let mut fishes = VecFish::new(input);
+    let mut fishes = Fish::new(input);
     let start : DateTime<Utc> = Utc::now();
     do_it(&mut fishes, days);
     let duration = Utc::now() - start;
@@ -159,7 +162,7 @@ pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     fishes.num_fish()
 }
 
-pub fn do_it<T: Numeric>(fish: &mut VecFish<T>, days: u32) {
+pub fn do_it<T: Numeric>(fish: &mut Fish<T>, days: u32) {
     for d in 0..days {
         fish.update();
         //println!("{} | day {},  {:?}", fishes, d, fishes.num_fish());
