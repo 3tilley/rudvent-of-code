@@ -106,6 +106,7 @@ impl<T: Numeric> VecFish<T> {
         VecFish{vec}
     }
 
+    #[inline(never)]
     fn update(&mut self) {
         let new_fish = self.vec[0 as usize];
         for day in 1..8 {
