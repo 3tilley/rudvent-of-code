@@ -154,7 +154,7 @@ pub fn load_data(name: &str) -> Vec<u32> {
 pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     let input = load_data(name);
     //log::debug!("{:?}", input);
-    let mut fishes = Fish::new(input);
+    let mut fishes = VecFish::new(input);
     let start : DateTime<Utc> = Utc::now();
     do_it(&mut fishes, days);
     let duration = Utc::now() - start;
@@ -163,7 +163,7 @@ pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     fishes.num_fish()
 }
 
-pub fn do_it<T: Numeric>(fish: &mut Fish<T>, days: u32) {
+pub fn do_it<T: Numeric>(fish: &mut VecFish<T>, days: u32) {
     for d in 0..days {
         fish.update();
         //println!("{} | day {},  {:?}", fishes, d, fishes.num_fish());
