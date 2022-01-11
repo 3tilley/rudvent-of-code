@@ -62,6 +62,7 @@ impl<T: Numeric> Fish<T> {
         Fish{map}
     }
 
+    #[inline(never)]
     fn update(&mut self) {
         let new_fish = *self.map.get(&0u32).unwrap();
         //log::debug!("{:?}", new_fish);
