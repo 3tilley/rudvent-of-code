@@ -91,12 +91,13 @@ impl<T: Numeric> Fish<T> {
 
 
 pub struct VecFish<T> where T: Numeric {
-    vec: Vec<T>,
+    vec: [T; 9]
 }
 
 impl<T: Numeric> VecFish<T> {
     fn new(fish: Vec<u32>) -> VecFish<T> {
-        let mut vec: Vec<T> = vec![Numeric::zero(); 9];
+        //let mut vec: Vec<T> = vec![Numeric::zero(); 9];
+        let mut vec : [T; 9] = [Numeric::zero(); 9];
         //log::debug!("{:?}", map);
         for f in fish {
             let mut original = vec.get_mut(f as usize).unwrap();
