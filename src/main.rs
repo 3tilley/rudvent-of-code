@@ -49,10 +49,10 @@ fn main() {
     //println!("{}us", duration.num_microseconds().unwrap());
 
     println!("Answer: {:?}", answer);
-    if utils::ask_bool_input() {
-        terminal_clipboard::set_string(answer.to_string());
-        println!("Answer on clipboard")
-    } else {
-        println!("Clipboard unchanged")
-    }
+    //if utils::ask_bool_input() {
+        //terminal_clipboard::set_string(answer.to_string());
+        //println!("Answer on clipboard")
+    //} else {
+        //println!("Clipboard unchanged")
+    //}
 }

@@ -163,6 +163,7 @@ pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     fishes.num_fish()
 }
 
+#[inline(never)]
 pub fn do_it<T: Numeric>(fish: &mut VecFish<T>, days: u32) {
     for d in 0..days {
         fish.update();
