@@ -3,6 +3,7 @@ use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, IndexMut};
 use std::process::Output;
+use std::time::{Duration, Instant};
 use chrono::{DateTime, Utc};
 use fxhash::{FxHasher, FxHashMap};
 use crate::utils;
@@ -220,11 +221,13 @@ pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     let input = load_data(name);
     //log::debug!("{:?}", input);
     let mut fishes = DumbFish::new(input);
-    let start : DateTime<Utc> = Utc::now();
+    let start = Instant::now();
+    //let start : DateTime<Utc> = Utc::now();
     do_it(&mut fishes, days);
-    let duration = Utc::now() - start;
+    //let duration = Utc::now() - start;
+    let duration = start.elapsed();
 
-    println!("{}ns", duration.num_nanoseconds().unwrap());
+    println!("{}ns", duration.as_nanos());
     fishes.num_fish()
 }
 
