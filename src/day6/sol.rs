@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::Add;
+use std::ops::{Add, IndexMut};
 use std::process::Output;
 use chrono::{DateTime, Utc};
 use fxhash::{FxHasher, FxHashMap};
@@ -131,6 +131,70 @@ impl<T: Numeric> VecFish<T> {
     }
 
 }
+
+pub struct DumbFish<T> where T: Numeric {
+    v0: T,
+    v1: T,
+    v2: T,
+    v3: T,
+    v4: T,
+    v5: T,
+    v6: T,
+    v7: T,
+    v8: T,
+}
+
+impl<T: Numeric> DumbFish<T> {
+    fn new(fish: Vec<u32>) -> DumbFish<T> {
+        let mut vec: Vec<T> = vec![Numeric::zero(); 9];
+        //log::debug!("{:?}", map);
+        for f in fish {
+            let mut original = vec.get_mut(f as usize).unwrap();
+            *original = original.checked_add(T::one()).unwrap();
+        }
+        log::debug!("{:?}", vec);
+        DumbFish{v0: vec[0],
+            v1: vec[1],
+            v2: vec[2],
+            v3: vec[3],
+            v4: vec[4],
+            v5: vec[5],
+            v6: vec[6],
+            v7: vec[7],
+            v8: vec[7],
+        }
+    }
+
+    #[inline(never)]
+    fn update(&mut self) {
+        let new_fish = self.v0;
+        self.v0 = self.v1;
+        self.v1 = self.v2;
+        self.v2 = self.v3;
+        self.v3 = self.v4;
+        self.v4 = self.v5;
+        self.v5 = self.v6;
+        self.v6 = self.v7.checked_add(new_fish).unwrap();
+        self.v7 = self.v8;
+        self.v8 = new_fish;
+        //log::debug!("{:?} - total: {}", self.vec, self.num_fish());
+    }
+
+    fn num_fish(&self) -> T {
+        let mut counter = T::zero();
+        counter = counter.checked_add(self.v0).unwrap();
+        counter = counter.checked_add(self.v1).unwrap();
+        counter = counter.checked_add(self.v2).unwrap();
+        counter = counter.checked_add(self.v3).unwrap();
+        counter = counter.checked_add(self.v4).unwrap();
+        counter = counter.checked_add(self.v5).unwrap();
+        counter = counter.checked_add(self.v6).unwrap();
+        counter = counter.checked_add(self.v7).unwrap();
+        counter = counter.checked_add(self.v8).unwrap();
+        counter
+    }
+
+}
 impl<T: Numeric> fmt::Display for Fish<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut out_vec: Vec<(u32, T)> = Vec::new();
@@ -155,7 +219,7 @@ pub fn load_data(name: &str) -> Vec<u32> {
 pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     let input = load_data(name);
     //log::debug!("{:?}", input);
-    let mut fishes = VecFish::new(input);
+    let mut fishes = DumbFish::new(input);
     let start : DateTime<Utc> = Utc::now();
     do_it(&mut fishes, days);
     let duration = Utc::now() - start;
@@ -165,7 +229,7 @@ pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
 }
 
 #[inline(never)]
-pub fn do_it<T: Numeric>(fish: &mut VecFish<T>, days: u32) {
+pub fn do_it<T: Numeric>(fish: &mut DumbFish<T>, days: u32) {
     for d in 0..days {
         fish.update();
         //println!("{} | day {},  {:?}", fishes, d, fishes.num_fish());
