@@ -96,30 +96,29 @@ pub struct VecFish<T> where T: Numeric {
 
 impl<T: Numeric> VecFish<T> {
     fn new(fish: Vec<u32>) -> VecFish<T> {
-        let mut vec: Vec<T> = vec![Numeric::zero(); 10];
+        let mut vec: Vec<T> = vec![Numeric::zero(); 9];
         //log::debug!("{:?}", map);
         for f in fish {
             let mut original = vec.get_mut(f as usize).unwrap();
             *original = original.checked_add(T::one()).unwrap();
         }
-        //log::debug!("{:?}", map);
+        log::debug!("{:?}", vec);
         VecFish{vec}
     }
 
     #[inline(never)]
     fn update(&mut self) {
-        let new_fish = self.vec[0 as usize];
-        for day in 1..8 {
-            let old = self.vec[day as usize];
-            self.vec.insert(day - 1, old);
+        let new_fish = self.vec[0];
+        for day in 1..9 {
+            self.vec[day-1] = self.vec[day];
         }
-        //log::debug!("{:?}", self.map);
-        self.vec.insert(8,new_fish);
+        //log::debug!("{:?}", self.vec);
+        self.vec[8] = new_fish;
         let old_val = self.vec[6];
         //let new_val = old_val.checked_add(new_fish).unwrap();
         let new_val = old_val.checked_add(new_fish).unwrap();
-        self.vec.insert(6, new_val);
-        //log::debug!("{:?}", self.map);
+        self.vec[6] = new_val;
+        //log::debug!("{:?} - total: {}", self.vec, self.num_fish());
     }
 
     fn num_fish(&self) -> T {
@@ -160,7 +159,7 @@ pub fn ans<T: Numeric>(name: &str, days: u32) -> T {
     do_it(&mut fishes, days);
     let duration = Utc::now() - start;
 
-    println!("{}us", duration.num_microseconds().unwrap());
+    println!("{}ns", duration.num_nanoseconds().unwrap());
     fishes.num_fish()
 }
 
