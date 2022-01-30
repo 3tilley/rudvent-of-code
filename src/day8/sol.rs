@@ -39,6 +39,8 @@ flags! {
     }
 }
 
+
+
 pub fn make_grid() -> Vec<FlagSet<Actuals>> {
     let mut vec = Vec::new();
     vec.push(FlagSet::<Actuals>::full() ^ Actuals::D);
@@ -84,6 +86,14 @@ impl Possibilities {
         self.map.iter().all(|(x, _) | self.options(x) == 1)
     }
 
+    fn add_one_seven(&self, one: FlagSet<Segments>, seven: FlagSet<Segments>) {
+        assert_eq!(count_segments(one), 2);
+        assert_eq!(count_segments(seven), 3);
+
+        for ones in one.into_iter() {
+
+        }
+    }
 }
 
 pub struct Line {
@@ -171,8 +181,9 @@ impl Solution<u32, Vec<Line>, u32> for Sol {
     fn inner_b(prep: Vec<Line>) -> u32 {
 
         for lines in prep {
-            poss = Possibilities::new();
+            let poss = Possibilities::new();
         }
+        3
     }
 
 
@@ -184,8 +195,9 @@ impl Solution<u32, Vec<Line>, u32> for Sol {
 
 #[cfg(test)]
 mod tests {
+    use criterion::SamplingMode::Flat;
     use flagset::FlagSet;
-    use crate::day8::sol::{Segments, to_segment, read_line, from_word, count_segments};
+    use crate::day8::sol::{Segments, to_segment, read_line, from_word, count_segments, Possibilities};
 
     #[test]
     fn test_read_flag() {
@@ -217,5 +229,14 @@ mod tests {
     fn test_count() {
         let flagset = from_word("ab".chars());
         assert_eq!(count_segments(flagset), 2);
+    }
+
+    #[test]
+    fn test_possibilities_start() {
+        let poss = Possibilities::new();
+        assert_eq!(poss.all_resolved(), false);
+        for s in FlagSet::<Segments>::full().into_iter() {
+            assert_eq!(poss.options(&s), 7);
+        }
     }
 }
