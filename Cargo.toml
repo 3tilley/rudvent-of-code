@@ -16,3 +16,10 @@ flagset = "0.4"
 chrono = "*"
 fxhash = "*"
 #pprof = "*"
+
+[dev-dependencies]
+criterion = {version = "*", features = ["html_reports"]}
+
+[[bench]]
+name = "day6"
+harness = false

@@ -3,16 +3,12 @@ use std::ascii::escape_default;
 use std::thread::sleep;
 use std::time::Duration;
 use chrono::prelude::*;
+use rudvent::utils::Solution;
 
-mod day1;
-mod day2;
-mod day3;
-mod day4;
-mod day5;
-mod day6;
-mod day7;
-mod day8;
-mod utils;
+enum Section {
+    A,
+    B,
+}
 
 fn main() {
     env_logger::init();
@@ -41,12 +37,26 @@ fn main() {
         }
     };
 
+    let section = Section.A;
 
-    //let start : DateTime<Utc> = Utc::now();
-    let answer = day6::sol::b("input.txt");
-    //let duration = Utc::now() - start;
+    match section {
+        Section::A => {
+            let input = rudvent::day8::sol::Sol::prepare_a(false);
+            let start : DateTime<Utc> = Utc::now();
+            let mid_result = rudvent::day8::sol::Sol::inner_a(input);
+            let duration = Utc::now() - start;
+            let answer = rudvent::day8::sol::Sol::output_a(mid_result);
+        }
+        Section::B => {
+            let input = rudvent::day8::sol::Sol::prepare_b(false);
+            let start : DateTime<Utc> = Utc::now();
+            let mid_result = rudvent::day8::sol::Sol::inner_b(input);
+            let duration = Utc::now() - start;
+            let answer = rudvent::day8::sol::Sol::output_b(mid_result);
+        }
+    }
 
-    //println!("{}us", duration.num_microseconds().unwrap());
+    println!("{}us", duration.num_microseconds().unwrap());
 
     println!("Answer: {:?}", answer);
     //if utils::ask_bool_input() {

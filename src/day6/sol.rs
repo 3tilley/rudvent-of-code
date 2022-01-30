@@ -133,6 +133,7 @@ impl<T: Numeric> VecFish<T> {
 
 }
 
+#[derive(Clone)]
 pub struct DumbFish<T> where T: Numeric {
     v0: T,
     v1: T,
@@ -146,7 +147,7 @@ pub struct DumbFish<T> where T: Numeric {
 }
 
 impl<T: Numeric> DumbFish<T> {
-    fn new(fish: Vec<u32>) -> DumbFish<T> {
+    pub fn new(fish: Vec<u32>) -> DumbFish<T> {
         let mut vec: Vec<T> = vec![Numeric::zero(); 9];
         //log::debug!("{:?}", map);
         for f in fish {
