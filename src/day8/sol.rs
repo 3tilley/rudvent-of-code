@@ -1,8 +1,8 @@
 use std::cmp::max;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::Add;
+use std::ops::{Add, Not};
 use std::process::Output;
 use crate::utils;
 
@@ -24,6 +24,16 @@ flags! {
         F,
         G,
     }
+
+}
+
+impl From<FlagSet<Segments>> for Segments {
+    fn from(flagset: FlagSet<Segments>) -> Self {
+        let vec : Vec<Segments> = flagset.into_iter().collect();
+        assert_eq!(vec.len(),1);
+        //Segments(flagset.bits())
+        vec[0]
+    }
 }
 
 flags! {
@@ -39,7 +49,7 @@ flags! {
     }
 }
 
-
+//fn actual_from_segments(segments: Segments)
 
 pub fn make_grid() -> Vec<FlagSet<Actuals>> {
     let mut vec = Vec::new();
@@ -69,13 +79,15 @@ fn count_segments<T: flagset::Flags>(flags: FlagSet<T>) -> u32 where FlagSet<T>:
 
 struct Possibilities {
     map: HashMap<Segments, FlagSet<Actuals>>,
+    grid: Vec<FlagSet<Actuals>>,
 }
 
 impl Possibilities {
     fn new() -> Possibilities {
+        let grid = make_grid();
         let iter = FlagSet::<Segments>::full().into_iter().map(|x| (x, FlagSet::full()));
         let map = HashMap::from_iter(iter);
-        Possibilities{map}
+        Possibilities{map, grid}
     }
 
     fn options(&self, segment: &Segments) -> u32 {
@@ -86,14 +98,61 @@ impl Possibilities {
         self.map.iter().all(|(x, _) | self.options(x) == 1)
     }
 
-    fn add_one_seven(&self, one: FlagSet<Segments>, seven: FlagSet<Segments>) {
+    fn add_one_seven(&mut self, one: FlagSet<Segments>, seven: FlagSet<Segments>) {
         assert_eq!(count_segments(one), 2);
         assert_eq!(count_segments(seven), 3);
 
-        for ones in one.into_iter() {
+        for one_seg in one.into_iter() {
+            //let mut original = self.map.get_mut(&one_seg).unwrap();
+            //original = &mut self.grid[1];
+            //self.map.entry(one_seg).and_modify(|mut e|) self.grid[1]);
+            self.update_actuals(one_seg, self.grid[1], false);
+            //self.map.entry(one_seg).and_modify(|mut e| e = self.grid[1].clone());
+        }
+        self.update_actuals(Segments::from(seven - one), Actuals::A | Actuals::A, false);
 
+        for other in FlagSet::<Segments>::not(seven).into_iter() {
+            self.update_actuals(other, self.grid[7], true);
         }
     }
+    fn add_four(&mut self, four: FlagSet<Segments>) {
+        self.add_num(four, 4);
+    }
+
+    fn add_zero_six_nine(&mut self, candidates: Vec<FlagSet<Segments>>) {
+        let intersect = Actuals::A | Actuals::B | Actuals::F | Actuals::G;
+        for c in candidates {
+            for seg in c.into_iter() {
+                self.update_actuals(seg, intersect, false)
+            }
+        }
+    }
+
+    fn add_two_three_five(&mut self, candidates: Vec<FlagSet<Segments>>) {
+        let intersect = Actuals::A | Actuals::D | Actuals::G;
+        for c in candidates {
+            for seg in c.into_iter() {
+                self.update_actuals(seg, intersect, false)
+            }
+        }
+    }
+
+    fn add_num(&mut self, letters: FlagSet<Segments>, num: usize) {
+        let num_actuals = self.grid[num];
+        for seg in FlagSet::<Segments>::full().into_iter() {
+            println!("{:?}, {:?}, {}", seg, num_actuals, letters.contains(seg));
+            self.update_actuals(seg, num_actuals, !letters.contains(seg))
+        }
+    }
+
+    fn update_actuals(&mut self, segment: Segments, actual: FlagSet<Actuals>, remove: bool) {
+        if remove {
+            self.map.entry(segment).and_modify(|mut e| *e -= actual);
+        } else {
+            self.map.entry(segment).and_modify(|mut e| *e &= actual);
+        }
+    }
+
 }
 
 pub struct Line {
@@ -180,8 +239,24 @@ impl Solution<u32, Vec<Line>, u32> for Sol {
 
     fn inner_b(prep: Vec<Line>) -> u32 {
 
-        for lines in prep {
-            let poss = Possibilities::new();
+        for mut line in prep {
+            let mut poss = Possibilities::new();
+            let mut together = line.output.clone();
+            together.append(&mut line.signals);
+            together.sort();
+            together.dedup();
+
+            let groupby = together.iter().group_by(|e| count_segments(e));
+            for (key, group) in groupby {
+                match key {
+                    2 => poss.add_num(group, 1),
+                    3 => poss.add_num(group, 7),
+                    4 => poss.add_num(group, 4),
+                    5 => poss.add_two_three_five(group),
+                    6 => poss.add_zero_six_nine(group),
+                    _ => (),
+                }
+            }
         }
         3
     }
@@ -238,5 +313,30 @@ mod tests {
         for s in FlagSet::<Segments>::full().into_iter() {
             assert_eq!(poss.options(&s), 7);
         }
+    }
+
+    #[test]
+    fn test_possibilities_add_seven() {
+        let mut poss = Possibilities::new();
+        poss.add_one_seven(from_word("ab".chars()), from_word("abc".chars()));
+        assert_eq!(poss.options(&Segments::C), 1);
+    }
+
+    #[test]
+    fn test_possibilities_add_four() {
+        let mut poss = Possibilities::new();
+        poss.add_four(from_word("bcdf".chars()));
+        assert_eq!(poss.options(&Segments::A), 3);
+        assert_eq!(poss.options(&Segments::B), 4);
+    }
+
+    #[test]
+    fn test_possibilities_add_multiple() {
+        let mut poss = Possibilities::new();
+        println!("{:?}", poss.map);
+        poss.add_one_seven(from_word("cf".chars()), from_word("acf".chars()));
+        println!("{:?}", poss.map);
+        poss.add_four(from_word("bcdf".chars()));
+        println!("{:?}", poss.map);
     }
 }
