@@ -3,21 +3,24 @@ use std::{fs, io};
 use std::convert::TryInto;
 use std::fmt::Debug;
 
-struct DayData {
+pub struct DayData {
     day: u8,
 }
 
 impl DayData {
-    fn new(day: u8) -> Self {
+    pub fn new(day: u8) -> Self {
         Self { day }
     }
 
-    fn example_1_path(&self) -> PathBuf {
-        let path = PathBuf::new();
-        let mut data_path = path.parent().unwrap().parent().unwrap();
+    pub fn example_1_path(&self) -> PathBuf {
+        let path = PathBuf::from(file!());
+        let mut data_path = path.parent().unwrap().parent().unwrap().to_path_buf();
         data_path.push("data");
         data_path.push(format!("day{}_example_1.txt", self.day));
+        data_path
     }
+
+
 }
 
 pub fn read_file_from_data(name: &str, relative_to: &str) -> String {

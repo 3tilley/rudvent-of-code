@@ -1,44 +1,24 @@
+use clap::Parser;
+use scraper::html::Select;
+use scraper::{ElementRef, Html, Selector};
+
+use crate::cli::BANNER;
+use cli::{Cli, Commands};
+
+use crate::utils::{ask_bool_input, ask_index_input, DayData};
+
+mod cli;
 mod day1;
 mod utils;
 
-use clap::Subcommand;
-
-use clap::Parser;
-use scraper::{Html, Selector, ElementRef};
-use scraper::html::Select;
-use crate::utils::{ask_bool_input, ask_index_input};
-
 // const url template
 const day_template: &str = "https://adventofcode.com/2022/day/{day}";
-
-#[derive(Parser)]
-struct Cli {
-    #[clap(subcommand)]
-    subcmd: Option<Commands>,
-
-    #[arg(short, long, action = clap::ArgAction::Count)]
-    debug: u8,
-
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    Fetch {
-        day: u8,
-        #[arg(short, long)]
-        overwrite: bool,
-    },
-
-
-}
 
 fn day_url(day: u8) -> String {
     day_template.replace("{day}", &day.to_string())
 }
 
-fn handle_downloads(day: u8) {
-
-}
+fn handle_downloads(day: u8) {}
 
 fn fetch_day_example(day: u8) {
     let url = day_url(day);
@@ -77,18 +57,25 @@ fn save_example(day: u8, content: &str) {
 fn main() {
     let cli = Cli::parse();
     // println!("{}, {:?}", cli.subcmd.unwrap().day(), utils::get_input_file_path(1));
-    match cli.subcmd.unwrap() {
-        Commands::Fetch { day, overwrite } => {
+    match cli.subcmd {
+        Some(Commands::Fetch { day, overwrite }) => {
             println!("Fetching day {}", day);
-            fetch_day_example(day);
+            let day_data = DayData::new(day);
+            if overwrite || !day_data.example_1_path().exists() {
+                println!(
+                    "Fetching example 1 from {}",
+                    day_data.example_1_path().display()
+                );
+                fetch_day_example(day);
+            } else {
+                println!("Example already exists, skipping");
+            }
 
             // println!("{}", text);
-
-
-
-
             //let input_file_path = utils::get_input_file_path(day);
         }
+        // Print help as well as a banner
+        //None => println!("{}\n{}", BANNER, cli.about),
+        None => println!("{}\n{}", BANNER, cli.debug),
     }
-
 }
