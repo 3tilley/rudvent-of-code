@@ -25,5 +25,17 @@ pub enum Commands {
         day: u8,
         #[arg(short, long)]
         overwrite: bool,
+        #[arg(short, long)]
+        dry_run: bool,
+    },
+    Desc {
+        day: u8,
+        #[arg(short, long)]
+        dry_run: bool,
+    },
+    Run {
+        day: u8,
+        #[arg(short, long)]
+        example: bool,
     },
 }
