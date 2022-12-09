@@ -2,8 +2,10 @@ use std::path::{Path, PathBuf};
 use std::{fs, io};
 use std::convert::TryInto;
 use std::fmt::Debug;
+use std::hash::BuildHasherDefault;
 use cached_path::{Cache, CacheBuilder};
 use color_eyre::eyre::{WrapErr, Result, eyre};
+use reqwest::blocking::Client;
 use scraper::{ElementRef, Html, Selector};
 
 // const url template
@@ -17,7 +19,9 @@ pub struct DayData {
     day: u8,
     data_dir: PathBuf,
     cache: Cache,
+    client: Client,
     dry_run: bool,
+    auth_token: String,
 }
 
 impl DayData {
@@ -26,14 +30,30 @@ impl DayData {
         let mut data_path = path.parent().unwrap().parent().unwrap().to_path_buf();
         data_path.push("data");
         data_path.push("html");
+        let mut token_path = PathBuf::from(file!()).parent().unwrap().parent().unwrap().to_path_buf();
+        token_path.push(".env");
+        token_path.push("session.txt");
+        let auth_token = read_as_string(&token_path).unwrap().trim().to_string();
         // It's probably a bit abusive, but I never want to hit the server if I can avoid it
         let ten_years_in_seconds = 10 * 365 * 24 * 60 * 60;
-        let cache = CacheBuilder::new()
+        let client = DayData::make_client_builder(&auth_token).build().unwrap();
+        let cache = CacheBuilder::new().client_builder(DayData::make_client_builder(&auth_token))
             .dir(data_path.clone())
             .freshness_lifetime(ten_years_in_seconds)
             .build()
             .unwrap();
-        Self { day, data_dir: data_path, cache, dry_run }
+        Self { day, data_dir: data_path, cache, dry_run, auth_token, client }
+    }
+
+    fn make_client_builder(auth_token: &str) -> reqwest::blocking::ClientBuilder {
+        reqwest::blocking::ClientBuilder::new().default_headers({
+            let mut headers = reqwest::header::HeaderMap::new();
+            headers.insert(
+                reqwest::header::COOKIE,
+                format!("session={}",auth_token.to_string()).parse().unwrap(),
+            );
+            headers
+        })
     }
 
     pub fn example_1_path(&self) -> PathBuf {
@@ -93,9 +113,9 @@ impl DayData {
             println!("Input file already exists, skipping");
         } else {
             println!("Fetching input data");
-            let text = reqwest::blocking::get(format!("{}/input", day_url(self.day))).unwrap().text()?;
+            let text = self.client.get(format!("{}/input", day_url(self.day))).send().unwrap().text()?;
             if text.contains("Puzzle inputs differ by user") {
-                Err(eyre!("Need to provide authentication to fetch puzzle data"))
+                return Err(eyre!("Need to provide authentication to fetch puzzle data"));
             }
             save_example(self.input_1_path(), &text, self.dry_run)?;
             println!("Saved");
@@ -113,6 +133,13 @@ impl DayData {
         let path = self.input_1_path();
         let data = read_as_string(&path).unwrap();
         data.trim().to_string()
+    }
+
+    pub fn post_ans(&self, answer: &str, level: u8) -> Result<()> {
+        let url = format!("{}/answer", day_url(self.day));
+        let answer = self.client.post(&url).form(&[("level", level.to_string()), ("answer", answer)]).send()?;
+        println!("Posted answer {}: {}", level, answer.text()?);
+        Ok(())
     }
 }
 

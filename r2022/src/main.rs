@@ -20,8 +20,7 @@ fn main() -> Result<()> {
         Some(Commands::Fetch { day, overwrite, dry_run }) => {
             println!("Fetching day {}", day);
             let day_data = DayData::new(day, dry_run);
-            day_data.fetch_data();
-            Ok(())
+            day_data.fetch_data()
 
             // println!("{}", text);
             //let input_file_path = utils::get_input_file_path(day);
@@ -33,7 +32,7 @@ fn main() -> Result<()> {
         },
         Some(Commands::Run { day, example }) => {
             println!("Running day {}", day);
-            let ans = day1::solution(example);
+            let ans = day1::solution(example).unwrap();
             Ok(println!("{}", ans))
         },
         // Print help as well as a banner
