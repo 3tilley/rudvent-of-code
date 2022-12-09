@@ -3,7 +3,7 @@ use std::{fs, io};
 use std::convert::TryInto;
 use std::fmt::Debug;
 use cached_path::{Cache, CacheBuilder};
-use color_eyre::eyre::{WrapErr, Result};
+use color_eyre::eyre::{WrapErr, Result, eyre};
 use scraper::{ElementRef, Html, Selector};
 
 // const url template
@@ -94,6 +94,9 @@ impl DayData {
         } else {
             println!("Fetching input data");
             let text = reqwest::blocking::get(format!("{}/input", day_url(self.day))).unwrap().text()?;
+            if text.contains("Puzzle inputs differ by user") {
+                Err(eyre!("Need to provide authentication to fetch puzzle data"))
+            }
             save_example(self.input_1_path(), &text, self.dry_run)?;
             println!("Saved");
         }
