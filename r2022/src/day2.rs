@@ -1,19 +1,42 @@
 use std::str::FromStr;
 use crate::DayData;
-use crate::utils::{Example, StructSolution};
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum Play {
-    Rock,
-    Paper,
-    Scissors,
-}
+use crate::solution::{Example, StructSolution};
 
 #[derive(Debug, Copy, Clone)]
 pub enum GameResult {
     Win,
     Loss,
     Draw,
+}
+
+impl GameResult {
+    pub fn points(&self) -> u8 {
+            match self {
+                GameResult::Win => 6,
+                GameResult::Loss => 0,
+                GameResult::Draw => 3,
+            }
+        }
+    }
+
+impl FromStr for GameResult {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "X" => Ok(GameResult::Loss),
+            "Y" => Ok(GameResult::Draw),
+            "Z" => Ok(GameResult::Win),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Play {
+    Rock,
+    Paper,
+    Scissors,
 }
 
 impl Play {
@@ -30,6 +53,31 @@ impl Play {
             GameResult::Loss
         }
     }
+
+    pub fn achieve_result(&self, result: GameResult) -> Play {
+        match result {
+            GameResult::Win => match self {
+                Play::Rock => Play::Paper,
+                Play::Paper => Play::Scissors,
+                Play::Scissors => Play::Rock,
+            },
+            GameResult::Loss => match self {
+                Play::Rock => Play::Scissors,
+                Play::Paper => Play::Rock,
+                Play::Scissors => Play::Paper,
+            },
+            GameResult::Draw => *self,
+        }
+    }
+
+    pub fn points(&self) -> u8 {
+        match self {
+            Play::Rock => 1,
+            Play::Paper => 2,
+            Play::Scissors => 3,
+        }
+    }
+
 }
 
 impl FromStr for Play {
@@ -51,18 +99,16 @@ pub struct GamePlan {
     response: Play,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct GamePlanPart2 {
+    play: Play,
+    desired_result: GameResult,
+}
+
 impl GamePlan {
     pub fn score(&self) -> u8 {
-        let game_score = match self.response.result(&self.play) {
-            GameResult::Win => 6,
-            GameResult::Loss => 0,
-            GameResult::Draw => 3,
-        };
-        match self.response {
-            Play::Rock => game_score + 1,
-            Play::Paper => game_score + 2,
-            Play::Scissors => game_score + 3,
-        }
+        let game_score = self.response.result(&self.play).points();
+        game_score + self.response.points()
     }
 }
 
@@ -79,19 +125,35 @@ pub fn prepare(input: String) -> Vec<GamePlan> {
     game_plans
 }
 
+pub fn prepare_2(input: String) -> Vec<GamePlanPart2> {
+    let mut game_plans = Vec::new();
+    for line in input.lines() {
+        let mut parts = line.split_whitespace();
+        let plan = GamePlanPart2 {
+            play: parts.next().unwrap().parse::<Play>().unwrap(),
+            desired_result: parts.next().unwrap().parse::<GameResult>().unwrap(),
+        };
+        game_plans.push(plan);
+    }
+    game_plans
+}
+
 pub fn part_1(input: Vec<GamePlan>) -> u64 {
     input.iter().map(|plan| plan.score() as u64).sum()
 }
 
-pub fn part_2(input: Vec<GamePlan>) -> u64 {
-    todo!("Implement part 1");
+pub fn part_2(input: Vec<GamePlanPart2>) -> u64 {
+    input.iter().map(|plan| {
+        let play = plan.play.achieve_result(plan.desired_result);
+        (play.points() as u64) + (plan.desired_result.points() as u64)
+    }).sum()
 }
 
-pub fn make_sol() -> StructSolution<Vec<GamePlan>, u64, u64> {
+pub fn make_sol() -> StructSolution<Vec<GamePlan>, u64, Vec<GamePlanPart2>, u64> {
     let struct_solution = StructSolution {
         prepare_part_1: prepare,
         calc_part_1: part_1,
-        prepare_part_2: prepare,
+        prepare_part_2: prepare_2,
         calc_part_2: part_2,
         example_part_1: Example::Value(15),
         example_part_2: Example::Value(12),

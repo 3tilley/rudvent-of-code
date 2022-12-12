@@ -1,7 +1,7 @@
-use crate::utils::{Example, StructSolution};
 use crate::DayData;
 use color_eyre::eyre::{eyre, Result};
 use std::fmt::Display;
+use crate::solution::{Example, StructSolution};
 
 pub struct Elf {
     items: Vec<u64>,
@@ -45,7 +45,7 @@ pub fn part_2(input: Vec<Elf>) -> u64 {
     cals[cals.len() - 3..].iter().sum()
 }
 
-pub fn make_sol() -> StructSolution<Vec<Elf>, u64, u64> {
+pub fn make_sol() -> StructSolution<Vec<Elf>, u64, Vec<Elf>, u64> {
     let struct_solution = StructSolution {
         prepare_part_1: prepare,
         calc_part_1: part_1,

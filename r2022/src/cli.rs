@@ -1,6 +1,6 @@
 use clap::Parser;
 use clap::Subcommand;
-use crate::utils::StructSolution;
+use crate::solution::StructSolution;
 
 pub const BANNER: &str = r#"
 ╭━━╮╱╱╱╱╱╱╭━━┳╮╱╱╭┳━╮╭━╮╱╱╭╮╱╱╱╱╱╱╱╱╭╮╱╱╱╭━╮╭━╮╱╱╭╮

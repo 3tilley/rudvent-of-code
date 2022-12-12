@@ -8,6 +8,7 @@ use std::hash::BuildHasherDefault;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 use scraper::node::Element;
+use crate::solution::PostError;
 
 // const url template
 const DAY_TEMPLATE: &str = "https://adventofcode.com/2022/day/{day}";
@@ -220,7 +221,7 @@ impl DayData {
         }
     }
 
-    pub fn post_ans(&self, answer: &str, part_1: bool) -> Result<()> {
+    pub fn post_ans(&self, answer: &str, part_1: bool) -> Result<String> {
         let suffix = if part_1 { "1" } else { "2" };
         let url = format!("{}/answer", day_url(self.day));
         let answer = self
@@ -234,7 +235,22 @@ impl DayData {
         data_path.push(format!("day{}_{}_answer.html", self.day, suffix));
         write_as_string(data_path, &text, self.dry_run)?;
 
+        Ok(text)
+    }
+
+}
+
+pub fn process_answer(post_result: String) -> std::result::Result<(), PostError> {
+    let html = Html::parse_document(&post_result);
+    let selector = Selector::parse("main article p").unwrap();
+    let mut selection = html.select(&selector);
+    let first_p = selection
+        .next()
+        .unwrap();
+    if first_p.inner_html().contains("That's the right answer!") {
         Ok(())
+    } else {
+        Err(PostError::TooLow)
     }
 }
 
@@ -247,7 +263,7 @@ pub fn read_file_from_data(name: &str, relative_to: &str) -> String {
 
     let this_file = relative.join(name);
     println!("Trying to read from: {}", this_file.display());
-    let data = read_as_string(path).unwrap();
+    let data = read_as_string(&path.to_path_buf()).unwrap();
     data
 }
 
@@ -295,7 +311,7 @@ pub fn ask_index_input<T: Debug>(
     })
 }
 
-pub fn read_as_string(path: &Path) -> Result<String> {
+pub fn read_as_string(path: &PathBuf) -> Result<String> {
     fs::read_to_string(&path)
         .wrap_err_with(|| format!("Failed to read data from {}", &path.display()))
 }
@@ -304,102 +320,6 @@ fn quiz_to_save(pre: &ElementRef) -> bool {
     let found_example = pre.inner_html();
     println!("\nFound example:\n{}", found_example);
     ask_bool_input("Save this example?", true)
-}
-
-#[derive(Debug, Clone)]
-pub enum Example<T> {
-    Value(T),
-    Regex(String),
-}
-
-impl<T: Clone> Example<T> {
-    pub fn value(&self) -> T {
-        match self {
-            Example::Value(v) => v.clone(),
-            Example::Regex(s) => unimplemented!(),
-        }
-    }
-}
-
-pub trait TraitSolution<T, U, V, W> {
-    fn a(example: bool) -> T {
-        todo!()
-    }
-    fn b(example: bool) -> U {
-        todo!()
-    }
-    fn prepare_a(example: bool) -> V {
-        todo!()
-    }
-    fn prepare_b(example: bool) -> W {
-        todo!()
-    }
-    // fn inner_a(prep: U) -> V {
-    //     todo!()
-    // }
-    // fn inner_b(prep: U) -> V {
-    //     todo!()
-    // }
-    // fn output_a(answer: V) -> T {
-    //     todo!()
-    // }
-    // fn output_b(answer: V) -> T {
-    //     todo!()
-    // }
-}
-
-pub struct StructSolution<T, U, V> {
-    pub prepare_part_1: fn(String) -> T,
-    pub calc_part_1: fn(T) -> U,
-    pub prepare_part_2: fn(String) -> T,
-    pub calc_part_2: fn(T) -> V,
-    pub example_part_1: Example<U>,
-    pub example_part_2: Example<V>,
-    pub day_data: DayData,
-}
-
-impl<T, U: PartialEq<U> + Debug + Clone, V: PartialEq<V> + Debug + Clone> StructSolution<T, U, V> {
-
-    pub fn check_example_1(&self) -> Result<U> {
-        let input = (self.prepare_part_1)(self.day_data.example_1());
-        let ans = (self.calc_part_1)(input);
-        let example_val: U = self.example_part_1.value();
-        if ans == example_val {
-            Ok(ans)
-        } else {
-            Err(eyre!(
-                "Example 1 failed. Expected: {:?}, got: {:?}",
-                example_val,
-                ans
-            ))
-        }
-
-    }
-
-    pub fn check_example_2(&self) -> Result<V> {
-        let input = (self.prepare_part_2)(self.day_data.example_2());
-        let ans = (self.calc_part_2)(input);
-        let example_val = self.example_part_2.value();
-        if ans == example_val {
-            Ok(ans)
-        } else {
-            Err(eyre!(
-                "Example 2 failed. Expected: {:?}, got: {:?}",
-                example_val,
-                ans
-            ))
-        }
-    }
-    pub fn run_part_1(&self) -> U {
-        let input = (self.prepare_part_1)(self.day_data.input_1());
-        let ans = (self.calc_part_1)(input);
-        ans
-    }
-    pub fn run_part_2(&self) -> V {
-        let input = (self.prepare_part_2)(self.day_data.input_2());
-        let ans = (self.calc_part_2)(input);
-        ans
-    }
 }
 
 fn write_as_string(path: PathBuf, content: &str, dry_run: bool) -> Result<()> {
@@ -412,4 +332,20 @@ fn write_as_string(path: PathBuf, content: &str, dry_run: bool) -> Result<()> {
         fs::write(&path, content)
             .wrap_err_with(|| format!("Failed to write data to {}", &path.display()))
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_process_answer() {
+        let path = PathBuf::from(file!());
+        let mut data_path = path.parent().unwrap().parent().unwrap().to_path_buf();
+        data_path.push("examples");
+        data_path.push("day2_2_answer.html");
+        let test_data = read_as_string(&data_path).unwrap();
+        process_answer(test_data);
+    }
+
 }

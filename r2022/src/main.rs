@@ -6,12 +6,14 @@ use scraper::{ElementRef, Html, Selector};
 use crate::cli::BANNER;
 use cli::{Cli, Commands};
 
-use crate::utils::{ask_bool_input, ask_index_input, DayData};
+use crate::utils::{ask_bool_input, ask_index_input, DayData, process_answer};
 
 mod cli;
 mod day1;
 mod utils;
 mod day2;
+mod solution;
+mod day3;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -34,11 +36,17 @@ fn main() -> Result<()> {
         Some(Commands::Desc { day, dry_run, all_html, part_2 }) => {
             println!("Fetching description for day {}", day);
             let day_data = DayData::new(day, dry_run);
-            Ok(println!("{}", day_data.html(!part_2, all_html)?))
+            if all_html {
+                Ok(println!("{}", day_data.html(!part_2, true)?))
+            } else {
+                let html = day_data.html(!part_2, false)?;
+                let pretty = html2text::from_read(html.as_bytes(), 80);
+                Ok(println!("{}", pretty))
+            }
         }
         Some(Commands::Run { day, example, part_2 }) => {
             println!("Running day {}", day);
-            let sol = day2::make_sol();
+            let sol = day3::make_sol();
             if !part_2 {
                 if example {
                     println!("Checking example 1");
@@ -52,7 +60,8 @@ fn main() -> Result<()> {
                     if !posted {
                         println!("You have not posted your answer yet!");
                         if ask_bool_input("Would you like to post your answer now?", false) {
-                            sol.day_data.post_ans(&ans.to_string(), !part_2)?;
+                            let result = sol.day_data.post_ans(&ans.to_string(), !part_2)?;
+                            process_answer(result).unwrap();
                         }
                     }
                     Ok(())
