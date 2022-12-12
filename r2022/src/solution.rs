@@ -1,6 +1,6 @@
 use std::fmt::{Debug};
 use color_eyre::eyre::eyre;
-use crate::DayData;
+use crate::{DayData, Output};
 
 #[derive(Debug, Clone)]
 pub enum Example<T> {
@@ -66,7 +66,7 @@ pub struct StructSolution<T, U, V, W> {
 }
 
 // U is is the result of part 1, W is the result of part 2
-impl<T, U: PartialEq<U> + Debug + Clone, V, W: PartialEq<W> + Debug + Clone> StructSolution<T, U, V, W> {
+impl<T, U: Output, V, W: Output> StructSolution<T, U, V, W> {
 
     pub fn check_example_1(&self) -> crate::Result<U> {
         let input = (self.prepare_part_1)(self.day_data.example_1());

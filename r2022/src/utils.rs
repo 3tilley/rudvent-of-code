@@ -137,7 +137,8 @@ impl DayData {
             }
             x => {
                 println!("Found {} potential example blocks, please select one:", x);
-                let index = ask_index_input("Enter a digit to choose", &pres, 3, 0);
+                let options = pres.iter().map(|x| x.inner_html()).collect::<Vec<String>>();
+                let index = ask_index_input("Enter a digit to choose", &options, 3, 0);
                 write_as_string(
                     self.example_1_path(),
                     &pres.get(index).unwrap().inner_html(),
@@ -224,23 +225,31 @@ impl DayData {
     pub fn post_ans(&self, answer: &str, part_1: bool) -> Result<String> {
         let suffix = if part_1 { "1" } else { "2" };
         let url = format!("{}/answer", day_url(self.day));
-        let answer = self
+        let resp = self
             .client
             .post(&url)
             .form(&[("level", suffix.to_string()), ("answer", answer.to_string())])
             .send()?;
-        let text = answer.text()?;
-        println!("Posted answer {}: {}", suffix, text);
+        let text = resp.text()?;
+        println!("Posted answer {}: {:?}", suffix, answer);
         let mut data_path = self.data_path();
         data_path.push(format!("day{}_{}_answer.html", self.day, suffix));
         write_as_string(data_path, &text, self.dry_run)?;
+        let res = process_answer(text);
+        match res {
+            Ok(x) => {
+                Ok(x)
+            }
+            Err(e) => {
+                Err(eyre!("Error processing answer: {:?}", e))
+            }
+        }
 
-        Ok(text)
     }
 
 }
 
-pub fn process_answer(post_result: String) -> std::result::Result<(), PostError> {
+pub fn process_answer(post_result: String) -> std::result::Result<String, PostError> {
     let html = Html::parse_document(&post_result);
     let selector = Selector::parse("main article p").unwrap();
     let mut selection = html.select(&selector);
@@ -248,7 +257,7 @@ pub fn process_answer(post_result: String) -> std::result::Result<(), PostError>
         .next()
         .unwrap();
     if first_p.inner_html().contains("That's the right answer!") {
-        Ok(())
+        Ok("That's the right answer!".to_string())
     } else {
         Err(PostError::TooLow)
     }
@@ -287,28 +296,49 @@ pub fn ask_bool_input(msg: &str, default: bool) -> bool {
         default
     }
 }
+fn find_min<'a, I>(vals: I) -> Option<&'a u32>
+    where
+        I: IntoIterator<Item = &'a u32>,
+{
+    vals.into_iter().min()
+}
 
 pub fn ask_index_input<T: Debug>(
     msg: &str,
     items: &Vec<T>,
     max_attempts: u32,
     current_attempt: u32,
-) -> usize {
+) -> usize
+{
     let mut answer = String::new();
     println!("Choose from the following options:\n");
-    for (i, item) in items.iter().enumerate() {
-        println!("{}:\n {:?}\n", i, item);
+    for (i, item) in items.into_iter().enumerate() {
+        println!("{}:\n {:?}\n", i + 1, item);
     }
     io::stdin().read_line(&mut answer);
-    usize::from_str_radix(&answer.trim(), 10).unwrap_or_else(|_| {
-        if current_attempt < max_attempts {
-            println!("Invalid input, please try again");
-            ask_index_input(msg, items, max_attempts, current_attempt + 1)
-        } else {
-            println!("Too many attempts, exiting");
-            std::process::exit(1);
+    match usize::from_str_radix(&answer.trim(), 10) {
+        Ok(x) => {
+            if x > 0 && x <= items.len() {
+                x - 1
+            } else {
+                if current_attempt < max_attempts {
+                    println!("Index out of range, try again");
+                    ask_index_input(msg, items, max_attempts, current_attempt + 1)
+                } else {
+                    panic!("Too many invalid inputs");
+                }
+            }
+        },
+        Err(e) => {
+            if current_attempt < max_attempts {
+                println!("Invalid input, please try again");
+                ask_index_input(msg, items, max_attempts, current_attempt + 1)
+            } else {
+                println!("Too many attempts, exiting");
+                std::process::exit(1);
+            }
         }
-    })
+    }
 }
 
 pub fn read_as_string(path: &PathBuf) -> Result<String> {
@@ -322,7 +352,7 @@ fn quiz_to_save(pre: &ElementRef) -> bool {
     ask_bool_input("Save this example?", true)
 }
 
-fn write_as_string(path: PathBuf, content: &str, dry_run: bool) -> Result<()> {
+pub fn write_as_string(path: PathBuf, content: &str, dry_run: bool) -> Result<()> {
     let msg = format!("Saving data to {}:\n{}", &path.display(), content);
     if dry_run {
         println!("Dry-run enabled, but would be {}", msg);
@@ -332,6 +362,11 @@ fn write_as_string(path: PathBuf, content: &str, dry_run: bool) -> Result<()> {
         fs::write(&path, content)
             .wrap_err_with(|| format!("Failed to write data to {}", &path.display()))
     }
+}
+
+pub fn rename_file(path: PathBuf, new_name: PathBuf) -> Result<()> {
+    fs::rename(&path, &new_name)
+        .wrap_err_with(|| format!("Failed to rename {} to {}", &path.display(), &new_name.display()))
 }
 
 #[cfg(test)]

@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Display};
 use clap::Parser;
 use color_eyre::eyre::Result;
 use scraper::html::Select;
@@ -5,6 +6,9 @@ use scraper::{ElementRef, Html, Selector};
 
 use crate::cli::BANNER;
 use cli::{Cli, Commands};
+use types::Output;
+use crate::day3::RuckSack;
+use crate::solution::StructSolution;
 
 use crate::utils::{ask_bool_input, ask_index_input, DayData, process_answer};
 
@@ -14,6 +18,8 @@ mod utils;
 mod day2;
 mod solution;
 mod day3;
+mod types;
+mod day4;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -49,45 +55,74 @@ fn main() -> Result<()> {
             let sol = day3::make_sol();
             if !part_2 {
                 if example {
-                    println!("Checking example 1");
-                    let ans = sol.check_example_1()?;
-                    Ok(println!("Example matches: {}", ans))
-                } else {
-                    println!("Checking part 1");
-                    let ans = sol.run_part_1();
-                    println!("Answer: {}", ans);
-                    let posted = sol.day_data.has_been_posted(false)?;
-                    if !posted {
-                        println!("You have not posted your answer yet!");
-                        if ask_bool_input("Would you like to post your answer now?", false) {
-                            let result = sol.day_data.post_ans(&ans.to_string(), !part_2)?;
-                            process_answer(result).unwrap();
+                    let cont = check_example_and_continue(&sol, !part_2);
+                    if !cont {
+                        return Ok(());
+                    }
+                }
+                println!("Checking part 1 with full input");
+                let ans = sol.run_part_1();
+                println!("Answer: {}", ans);
+                let posted = sol.day_data.has_been_posted(false)?;
+                if !posted {
+                    println!("You have not posted your answer yet!");
+                    if ask_bool_input("Would you like to post your answer now?", false) {
+                        let result = sol.day_data.post_ans(&ans.to_string(), !part_2);
+                        match result {
+                            Ok(x) => {
+                                println!("{}", x);
+                                let new_html = sol.day_data.html(false,false)?;
+                                let pretty = html2text::from_read(new_html.as_bytes(), 80);
+                                println!("{}", pretty);
+
+                            }
+                            Err(e) => println!("Error posting answer: {}", e),
                         }
                     }
-                    Ok(())
                 }
+                Ok(())
             } else {
                 if example {
-                    println!("Checking example 2");
-                    let ans = sol.check_example_2()?;
-                    Ok(println!("Example matches: {}", ans))
-                } else {
-                    println!("Running part 2");
-                    let ans = sol.run_part_2();
-                    println!("Answer: {}", ans);
-                    let posted = sol.day_data.has_been_posted(false)?;
-                    if !posted {
-                        println!("You have not posted your answer yet!");
-                        if ask_bool_input("Would you like to post your answer now?", false) {
-                            sol.day_data.post_ans(&ans.to_string(), !part_2)?;
+                    let cont = check_example_and_continue(&sol, !part_2);
+                    if !cont {
+                        return Ok(());
+                    }
+                }
+                println!("Running part 2");
+                let ans = sol.run_part_2();
+                println!("Answer: {}", ans);
+                let posted = sol.day_data.has_been_posted(false)?;
+                if !posted {
+                    println!("You have not posted your answer yet!");
+                    if ask_bool_input("Would you like to post your answer now?", false) {
+                        let result = sol.day_data.post_ans(&ans.to_string(), !part_2);
+                        match result {
+                            Ok(x) => {
+                                println!("{}", x);
+                                println!("Day {} complete, onto day {}!", day, day + 1);
+                            }
+                            Err(e) => println!("Error posting answer: {}", e),
                         }
                     }
-                    Ok(())
                 }
+                Ok(())
             }
         }
         // Print help as well as a banner
         //None => println!("{}\n{}", BANNER, cli.about),
         None => Ok(println!("{}\n{}", BANNER, cli.debug)),
     }
+}
+
+fn check_example_and_continue<T, U: Output, V, W: Output>(sol: &StructSolution<T, U, V, W>, part_1: bool) -> bool {
+    let suffix = if part_1 { "1" } else { "2" };
+    println!("Checking example {}", suffix);
+    if part_1 {
+        let ans = sol.check_example_1();
+        println!("Example matches: {}", ans.unwrap());
+    } else {
+        let ans = sol.check_example_2();
+        println!("Example matches: {}", ans.unwrap());
+    };
+    !ask_bool_input("Run the full input set?", true)
 }
