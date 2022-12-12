@@ -1,12 +1,13 @@
-use std::path::{Path, PathBuf};
-use std::{fs, io};
-use std::convert::TryInto;
-use std::fmt::Debug;
-use std::hash::BuildHasherDefault;
 use cached_path::{Cache, CacheBuilder};
-use color_eyre::eyre::{WrapErr, Result, eyre};
+use color_eyre::eyre::{eyre, Result, WrapErr};
 use reqwest::blocking::Client;
 use scraper::{ElementRef, Html, Selector};
+use std::convert::TryInto;
+use std::fmt::{Debug, format};
+use std::hash::BuildHasherDefault;
+use std::path::{Path, PathBuf};
+use std::{fs, io};
+use scraper::node::Element;
 
 // const url template
 const DAY_TEMPLATE: &str = "https://adventofcode.com/2022/day/{day}";
@@ -30,19 +31,32 @@ impl DayData {
         let mut data_path = path.parent().unwrap().parent().unwrap().to_path_buf();
         data_path.push("data");
         data_path.push("html");
-        let mut token_path = PathBuf::from(file!()).parent().unwrap().parent().unwrap().to_path_buf();
+        let mut token_path = PathBuf::from(file!())
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .to_path_buf();
         token_path.push(".env");
         token_path.push("session.txt");
         let auth_token = read_as_string(&token_path).unwrap().trim().to_string();
         // It's probably a bit abusive, but I never want to hit the server if I can avoid it
         let ten_years_in_seconds = 10 * 365 * 24 * 60 * 60;
         let client = DayData::make_client_builder(&auth_token).build().unwrap();
-        let cache = CacheBuilder::new().client_builder(DayData::make_client_builder(&auth_token))
+        let cache = CacheBuilder::new()
+            .client_builder(DayData::make_client_builder(&auth_token))
             .dir(data_path.clone())
             .freshness_lifetime(ten_years_in_seconds)
             .build()
             .unwrap();
-        Self { day, data_dir: data_path, cache, dry_run, auth_token, client }
+        Self {
+            day,
+            data_dir: data_path,
+            cache,
+            dry_run,
+            auth_token,
+            client,
+        }
     }
 
     fn make_client_builder(auth_token: &str) -> reqwest::blocking::ClientBuilder {
@@ -50,52 +64,85 @@ impl DayData {
             let mut headers = reqwest::header::HeaderMap::new();
             headers.insert(
                 reqwest::header::COOKIE,
-                format!("session={}",auth_token.to_string()).parse().unwrap(),
+                format!("session={}", auth_token.to_string())
+                    .parse()
+                    .unwrap(),
             );
             headers
         })
     }
 
-    pub fn example_1_path(&self) -> PathBuf {
+    pub fn data_path(&self) -> PathBuf {
         let path = PathBuf::from(file!());
         let mut data_path = path.parent().unwrap().parent().unwrap().to_path_buf();
         data_path.push("data");
+        data_path
+    }
+
+    pub fn example_1_path(&self) -> PathBuf {
+        let mut data_path = self.data_path();
         data_path.push(format!("day{}_example_1.txt", self.day));
         data_path
     }
 
     pub fn input_1_path(&self) -> PathBuf {
-        let path = PathBuf::from(file!());
-        let mut data_path = path.parent().unwrap().parent().unwrap().to_path_buf();
-        data_path.push("data");
+        let mut data_path = self.data_path();
         data_path.push(format!("day{}_input_1.txt", self.day));
         data_path
     }
 
-    pub fn html_for_day(&self) -> String {
-        let path = self.cache.cached_path(&*day_url(self.day)).unwrap();
-        let data = read_as_string(&path).unwrap();
-        data
+    pub fn html(&self, part_1: bool, all_html: bool) -> Result<String> {
+        let suffix = if part_1 { "1" } else { "2" };
+        let path = self
+            .data_dir
+            .join(format!("day{}_{}.html", self.day, suffix));
+        let text = if path.exists() {
+            log::info!("Loading HTML from {}", path.to_string_lossy());
+            read_as_string(&path).unwrap()
+        } else {
+            log::info!("HTML not in cache, fetching");
+            let url = day_url(self.day);
+            let text = self.client.get(&url).send()?.text()?;
+            write_as_string(path, &text, false)?;
+            text
+        };
+        if all_html {
+            return Ok(text);
+        }
+        let html = Html::parse_document(&text);
+        let selector = Selector::parse("article.day-desc").unwrap();
+        let mut matching = Vec::new();
+        for element in html.select(&selector) {
+            matching.push(element.inner_html());
+        }
+        log::info!("Found {} matching elements", matching.len());
+        Ok(matching.join("\n"))
     }
 
-    pub fn fetch_day_example(&self) {
-        let html = self.html_for_day();
+    pub fn fetch_day_example(&self, part_1: bool) -> Result<()> {
+        let html = self.html(part_1, false)?;
         let doc = Html::parse_document(&html);
         let pre_selector = Selector::parse("pre code").unwrap();
         let pres = doc.select(&pre_selector).collect::<Vec<_>>();
         println!("\n{} pre tags\n", pres.len());
         match pres.len() {
-            0 => println!("No obvious example blocks found"),
+            0 => Err(eyre!("No obvious example blocks found")),
             1 => {
                 let pre = pres.get(0).unwrap();
                 if quiz_to_save(pre) {
-                    save_example(self.example_1_path(), &pre.inner_html(), self.dry_run);
+                    write_as_string(self.example_1_path(), &pre.inner_html(), self.dry_run);
                 }
+                Ok(())
             }
             x => {
                 println!("Found {} potential example blocks, please select one:", x);
                 let index = ask_index_input("Enter a digit to choose", &pres, 3, 0);
-                save_example(self.example_1_path(), &pres.get(index).unwrap().inner_html(), self.dry_run);
+                write_as_string(
+                    self.example_1_path(),
+                    &pres.get(index).unwrap().inner_html(),
+                    self.dry_run,
+                );
+                Ok(())
             }
         }
     }
@@ -104,8 +151,8 @@ impl DayData {
         if self.example_1_path().exists() {
             println!("Example file already exists, skipping");
         } else {
-            println!("Fetching example data");
-            self.fetch_day_example();
+            println!("Fetching example data for part 1");
+            self.fetch_day_example(true);
             println!("Saved");
         }
 
@@ -113,17 +160,28 @@ impl DayData {
             println!("Input file already exists, skipping");
         } else {
             println!("Fetching input data");
-            let text = self.client.get(format!("{}/input", day_url(self.day))).send().unwrap().text()?;
+            let text = self
+                .client
+                .get(format!("{}/input", day_url(self.day)))
+                .send()
+                .unwrap()
+                .text()?;
             if text.contains("Puzzle inputs differ by user") {
                 return Err(eyre!("Need to provide authentication to fetch puzzle data"));
             }
-            save_example(self.input_1_path(), &text, self.dry_run)?;
+            write_as_string(self.input_1_path(), &text, self.dry_run)?;
             println!("Saved");
         }
-         Ok(())
+        Ok(())
     }
 
     pub fn example_1(&self) -> String {
+        let path = self.example_1_path();
+        let data = read_as_string(&path).unwrap();
+        data.trim().to_string()
+    }
+
+    pub fn example_2(&self) -> String {
         let path = self.example_1_path();
         let data = read_as_string(&path).unwrap();
         data.trim().to_string()
@@ -135,10 +193,47 @@ impl DayData {
         data.trim().to_string()
     }
 
-    pub fn post_ans(&self, answer: &str, level: u8) -> Result<()> {
+    pub fn input_2(&self) -> String {
+        let path = self.input_1_path();
+        let data = read_as_string(&path).unwrap();
+        data.trim().to_string()
+    }
+
+    pub fn has_been_posted(&self, part_1: bool) -> Result<bool> {
+        let selector = Selector::parse(&*format!(r#"form[action="{}/answer"]"#, self.day)).unwrap();
+        let html = Html::parse_document(&*self.html(true, true).unwrap());
+        let inputs = html.select(&selector).collect::<Vec<_>>();
+        if inputs.is_empty() {
+            Err(eyre!("No form found"))
+        } else if inputs.len() > 1 {
+            Err(eyre!("Multiple forms found"))
+        } else {
+            let form : ElementRef = *inputs.get(0).unwrap();
+            let input: Element = form.first_child().unwrap().value().as_element().unwrap().clone();
+            if input.attr("value").unwrap() == "1" {
+                log::info!("Part 1 not posted");
+                Ok(false)
+            } else {
+                log::info!("Part 1 posted, part 2 has not been posted");
+                Ok(part_1)
+            }
+        }
+    }
+
+    pub fn post_ans(&self, answer: &str, part_1: bool) -> Result<()> {
+        let suffix = if part_1 { "1" } else { "2" };
         let url = format!("{}/answer", day_url(self.day));
-        let answer = self.client.post(&url).form(&[("level", level.to_string()), ("answer", answer)]).send()?;
-        println!("Posted answer {}: {}", level, answer.text()?);
+        let answer = self
+            .client
+            .post(&url)
+            .form(&[("level", suffix.to_string()), ("answer", answer.to_string())])
+            .send()?;
+        let text = answer.text()?;
+        println!("Posted answer {}: {}", suffix, text);
+        let mut data_path = self.data_path();
+        data_path.push(format!("day{}_{}_answer.html", self.day, suffix));
+        write_as_string(data_path, &text, self.dry_run)?;
+
         Ok(())
     }
 }
@@ -166,7 +261,7 @@ pub fn ask_bool_input(msg: &str, default: bool) -> bool {
         println!("{} [y/N]", msg);
     }
     io::stdin().read_line(&mut answer);
-    println!("{}", answer);
+    // println!("{}", answer);
     let answer = answer.trim().to_lowercase();
     if yeses.contains(&answer) {
         true
@@ -177,8 +272,12 @@ pub fn ask_bool_input(msg: &str, default: bool) -> bool {
     }
 }
 
-pub fn ask_index_input<T: Debug>(msg: &str, items: &Vec<T>, max_attempts: u32, current_attempt: u32) -> usize {
-
+pub fn ask_index_input<T: Debug>(
+    msg: &str,
+    items: &Vec<T>,
+    max_attempts: u32,
+    current_attempt: u32,
+) -> usize {
     let mut answer = String::new();
     println!("Choose from the following options:\n");
     for (i, item) in items.iter().enumerate() {
@@ -207,42 +306,109 @@ fn quiz_to_save(pre: &ElementRef) -> bool {
     ask_bool_input("Save this example?", true)
 }
 
+#[derive(Debug, Clone)]
+pub enum Example<T> {
+    Value(T),
+    Regex(String),
+}
 
-// pub trait Solution<T, U, V> {
-//     fn a(example: bool) -> T {
-//         todo!()
-//     }
-//     fn b(example: bool) -> T {
-//         todo!()
-//     }
-//     fn prepare_a(example: bool) -> U {
-//         todo!()
-//     }
-//     fn prepare_b(example: bool) -> U {
-//         todo!()
-//     }
-//     fn inner_a(prep: U) -> V {
-//         todo!()
-//     }
-//     fn inner_b(prep: U) -> V {
-//         todo!()
-//     }
-//     fn output_a(answer: V) -> T {
-//         todo!()
-//     }
-//     fn output_b(answer: V) -> T {
-//         todo!()
-//     }
-// }
+impl<T: Clone> Example<T> {
+    pub fn value(&self) -> T {
+        match self {
+            Example::Value(v) => v.clone(),
+            Example::Regex(s) => unimplemented!(),
+        }
+    }
+}
 
-fn save_example(path: PathBuf, content: &str, dry_run: bool) -> Result<()> {
-    // Just printing for now
-    let msg = format!("Saving example at {}:\n{}", &path.display(), content);
+pub trait TraitSolution<T, U, V, W> {
+    fn a(example: bool) -> T {
+        todo!()
+    }
+    fn b(example: bool) -> U {
+        todo!()
+    }
+    fn prepare_a(example: bool) -> V {
+        todo!()
+    }
+    fn prepare_b(example: bool) -> W {
+        todo!()
+    }
+    // fn inner_a(prep: U) -> V {
+    //     todo!()
+    // }
+    // fn inner_b(prep: U) -> V {
+    //     todo!()
+    // }
+    // fn output_a(answer: V) -> T {
+    //     todo!()
+    // }
+    // fn output_b(answer: V) -> T {
+    //     todo!()
+    // }
+}
+
+pub struct StructSolution<T, U, V> {
+    pub prepare_part_1: fn(String) -> T,
+    pub calc_part_1: fn(T) -> U,
+    pub prepare_part_2: fn(String) -> T,
+    pub calc_part_2: fn(T) -> V,
+    pub example_part_1: Example<U>,
+    pub example_part_2: Example<V>,
+    pub day_data: DayData,
+}
+
+impl<T, U: PartialEq<U> + Debug + Clone, V: PartialEq<V> + Debug + Clone> StructSolution<T, U, V> {
+
+    pub fn check_example_1(&self) -> Result<U> {
+        let input = (self.prepare_part_1)(self.day_data.example_1());
+        let ans = (self.calc_part_1)(input);
+        let example_val: U = self.example_part_1.value();
+        if ans == example_val {
+            Ok(ans)
+        } else {
+            Err(eyre!(
+                "Example 1 failed. Expected: {:?}, got: {:?}",
+                example_val,
+                ans
+            ))
+        }
+
+    }
+
+    pub fn check_example_2(&self) -> Result<V> {
+        let input = (self.prepare_part_2)(self.day_data.example_2());
+        let ans = (self.calc_part_2)(input);
+        let example_val = self.example_part_2.value();
+        if ans == example_val {
+            Ok(ans)
+        } else {
+            Err(eyre!(
+                "Example 2 failed. Expected: {:?}, got: {:?}",
+                example_val,
+                ans
+            ))
+        }
+    }
+    pub fn run_part_1(&self) -> U {
+        let input = (self.prepare_part_1)(self.day_data.input_1());
+        let ans = (self.calc_part_1)(input);
+        ans
+    }
+    pub fn run_part_2(&self) -> V {
+        let input = (self.prepare_part_2)(self.day_data.input_2());
+        let ans = (self.calc_part_2)(input);
+        ans
+    }
+}
+
+fn write_as_string(path: PathBuf, content: &str, dry_run: bool) -> Result<()> {
+    let msg = format!("Saving data to {}:\n{}", &path.display(), content);
     if dry_run {
         println!("Dry-run enabled, but would be {}", msg);
         Ok(())
     } else {
-        log::info!("{}", msg);
+        log::trace!("{}", msg);
         fs::write(&path, content)
             .wrap_err_with(|| format!("Failed to write data to {}", &path.display()))
     }

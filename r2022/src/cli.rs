@@ -1,5 +1,6 @@
 use clap::Parser;
 use clap::Subcommand;
+use crate::utils::StructSolution;
 
 pub const BANNER: &str = r#"
 ╭━━╮╱╱╱╱╱╱╭━━┳╮╱╱╭┳━╮╭━╮╱╱╭╮╱╱╱╱╱╱╱╱╭╮╱╱╱╭━╮╭━╮╱╱╭╮
@@ -32,10 +33,24 @@ pub enum Commands {
         day: u8,
         #[arg(short, long)]
         dry_run: bool,
+        #[arg(short, long)]
+        all_html: bool,
+        #[arg(short, long)]
+        part_2: bool,
     },
     Run {
         day: u8,
         #[arg(short, long)]
         example: bool,
+        #[arg(short, long)]
+        part_2: bool,
     },
 }
+
+// pub fn make_solution<T, U, V>(day: u8) -> StructSolution<T, U, V> {
+//     match day {
+//         1 => crate::day1::make_sol(),
+//         2 => crate::day2::make_sol(),
+//         _ => panic!("Day {} not implemented", day),
+//     }
+// }
