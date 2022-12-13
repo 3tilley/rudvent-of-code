@@ -1,14 +1,15 @@
+use crate::solution::PostError;
 use cached_path::{Cache, CacheBuilder};
 use color_eyre::eyre::{eyre, Result, WrapErr};
+use color_eyre::Report;
 use reqwest::blocking::Client;
+use scraper::node::Element;
 use scraper::{ElementRef, Html, Selector};
 use std::convert::TryInto;
-use std::fmt::{Debug, format};
+use std::fmt::{format, Debug};
 use std::hash::BuildHasherDefault;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
-use scraper::node::Element;
-use crate::solution::PostError;
 
 // const url template
 const DAY_TEMPLATE: &str = "https://adventofcode.com/2022/day/{day}";
@@ -201,17 +202,29 @@ impl DayData {
         data.trim().to_string()
     }
 
-    pub fn has_been_posted(&self, part_1: bool) -> Result<bool> {
-        let selector = Selector::parse(&*format!(r#"form[action="{}/answer"]"#, self.day)).unwrap();
-        let html = Html::parse_document(&*self.html(true, true).unwrap());
+    pub fn check_for_posting(&self, part_1: bool) -> Result<bool> {
+        let document = &*self.html(true, true).unwrap();
+        let day = self.day;
+        Self::has_been_posted(part_1, document, day)
+    }
+
+    fn has_been_posted(part_1: bool, document: &str, day: u8) -> Result<bool, Report> {
+        let selector = Selector::parse(&*format!(r#"form[action="{}/answer"]"#, day)).unwrap();
+        let html = Html::parse_document(document);
         let inputs = html.select(&selector).collect::<Vec<_>>();
         if inputs.is_empty() {
             Err(eyre!("No form found"))
         } else if inputs.len() > 1 {
             Err(eyre!("Multiple forms found"))
         } else {
-            let form : ElementRef = *inputs.get(0).unwrap();
-            let input: Element = form.first_child().unwrap().value().as_element().unwrap().clone();
+            let form: ElementRef = *inputs.get(0).unwrap();
+            let input: Element = form
+                .first_child()
+                .unwrap()
+                .value()
+                .as_element()
+                .unwrap()
+                .clone();
             if input.attr("value").unwrap() == "1" {
                 log::info!("Part 1 not posted");
                 Ok(false)
@@ -228,7 +241,10 @@ impl DayData {
         let resp = self
             .client
             .post(&url)
-            .form(&[("level", suffix.to_string()), ("answer", answer.to_string())])
+            .form(&[
+                ("level", suffix.to_string()),
+                ("answer", answer.to_string()),
+            ])
             .send()?;
         let text = resp.text()?;
         println!("Posted answer {}: {:?}", suffix, answer);
@@ -237,25 +253,17 @@ impl DayData {
         write_as_string(data_path, &text, self.dry_run)?;
         let res = process_answer(text);
         match res {
-            Ok(x) => {
-                Ok(x)
-            }
-            Err(e) => {
-                Err(eyre!("Error processing answer: {:?}", e))
-            }
+            Ok(x) => Ok(x),
+            Err(e) => Err(eyre!("Error processing answer: {:?}", e)),
         }
-
     }
-
 }
 
 pub fn process_answer(post_result: String) -> std::result::Result<String, PostError> {
     let html = Html::parse_document(&post_result);
     let selector = Selector::parse("main article p").unwrap();
     let mut selection = html.select(&selector);
-    let first_p = selection
-        .next()
-        .unwrap();
+    let first_p = selection.next().unwrap();
     if first_p.inner_html().contains("That's the right answer!") {
         Ok("That's the right answer!".to_string())
     } else {
@@ -297,8 +305,8 @@ pub fn ask_bool_input(msg: &str, default: bool) -> bool {
     }
 }
 fn find_min<'a, I>(vals: I) -> Option<&'a u32>
-    where
-        I: IntoIterator<Item = &'a u32>,
+where
+    I: IntoIterator<Item = &'a u32>,
 {
     vals.into_iter().min()
 }
@@ -308,8 +316,7 @@ pub fn ask_index_input<T: Debug>(
     items: &Vec<T>,
     max_attempts: u32,
     current_attempt: u32,
-) -> usize
-{
+) -> usize {
     let mut answer = String::new();
     println!("Choose from the following options:\n");
     for (i, item) in items.into_iter().enumerate() {
@@ -328,7 +335,7 @@ pub fn ask_index_input<T: Debug>(
                     panic!("Too many invalid inputs");
                 }
             }
-        },
+        }
         Err(e) => {
             if current_attempt < max_attempts {
                 println!("Invalid input, please try again");
@@ -365,8 +372,13 @@ pub fn write_as_string(path: PathBuf, content: &str, dry_run: bool) -> Result<()
 }
 
 pub fn rename_file(path: PathBuf, new_name: PathBuf) -> Result<()> {
-    fs::rename(&path, &new_name)
-        .wrap_err_with(|| format!("Failed to rename {} to {}", &path.display(), &new_name.display()))
+    fs::rename(&path, &new_name).wrap_err_with(|| {
+        format!(
+            "Failed to rename {} to {}",
+            &path.display(),
+            &new_name.display()
+        )
+    })
 }
 
 #[cfg(test)]
@@ -383,4 +395,16 @@ mod tests {
         process_answer(test_data);
     }
 
+    #[test]
+    fn test_check_forms() {
+        let path = PathBuf::from(file!());
+        let mut data_path = path.parent().unwrap().parent().unwrap().to_path_buf();
+        data_path.push("examples");
+        data_path.push("day4_1.html");
+        let test_data = read_as_string(&data_path).unwrap();
+        assert_eq!(
+            DayData::has_been_posted(true, &*test_data, 4).unwrap(),
+            false
+        );
+    }
 }

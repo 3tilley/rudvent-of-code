@@ -1,12 +1,13 @@
-use std::str::FromStr;
-use crate::DayData;
 use crate::solution::{Example, StructSolution};
+use crate::DayData;
+use std::str::FromStr;
 
 type Input_1 = Vec<ElfPair>;
-type Output_1 = u32;
+type Output_1 = usize;
 type Input_2 = Vec<ElfPair>;
-type Output_2 = ();
+type Output_2 = usize;
 
+#[derive(Debug)]
 pub struct ElfPair {
     pub elf_1_start: u32,
     pub elf_1_end: u32,
@@ -30,16 +31,42 @@ impl FromStr for ElfPair {
     }
 }
 
+impl ElfPair {
+    pub fn has_total_overlaps(&self) -> bool {
+        let result = if self.elf_1_start == self.elf_2_start {
+            true
+        } else if self.elf_1_start < self.elf_2_start {
+            self.elf_1_end >= self.elf_2_end
+        } else {
+            self.elf_2_end >= self.elf_1_end
+        };
+        // println!("{:?}, result: {}", self, result);
+        result
+    }
+
+    pub fn has_any_overlaps(&self) -> bool {
+        let result = if self.elf_1_start == self.elf_2_start {
+            true
+        } else if self.elf_1_start < self.elf_2_start {
+            self.elf_1_end >= self.elf_2_start
+        } else {
+            self.elf_2_end >= self.elf_1_start
+        };
+        // println!("{:?}, result: {}", self, result);
+        result
+    }
+}
+
 pub fn prepare(input: String) -> Input_1 {
     input.lines().map(|line| line.parse().unwrap()).collect()
 }
 
 pub fn part_1(input: Input_1) -> Output_1 {
-    todo!("Implement part 1")
+    input.iter().filter(|p| p.has_total_overlaps()).count()
 }
 
 pub fn part_2(input: Input_2) -> Output_2 {
-    todo!("Implement part 2")
+    input.iter().filter(|p| p.has_any_overlaps()).count()
 }
 
 pub fn make_sol() -> StructSolution<Input_1, Output_1, Input_2, Output_2> {
@@ -49,8 +76,37 @@ pub fn make_sol() -> StructSolution<Input_1, Output_1, Input_2, Output_2> {
         prepare_part_2: prepare,
         calc_part_2: part_2,
         example_part_1: Example::Value(2),
-        example_part_2: Example::Value(()),
-        day_data: DayData::new(u8::MAX, false),
+        example_part_2: Example::Value(4),
+        day_data: DayData::new(4, false),
     };
     struct_solution
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part_1_basic() {
+        let e: ElfPair = "3-3,2-4".parse().unwrap();
+        let e2: ElfPair = "4-4,2-4".parse().unwrap();
+        let e3: ElfPair = "1-2,2-4".parse().unwrap();
+        let e4: ElfPair = "2-2,2-4".parse().unwrap();
+        let e5: ElfPair = "2-2,2-2".parse().unwrap();
+        let e6: ElfPair = "2-4,3-3".parse().unwrap();
+        let e7: ElfPair = "2-4,4-4".parse().unwrap();
+        let e8: ElfPair = "2-4,1-2".parse().unwrap();
+        let e9: ElfPair = "2-4,2-2".parse().unwrap();
+        let e10: ElfPair = "2-2,2-2".parse().unwrap();
+        assert_eq!(e.has_total_overlaps(), true);
+        assert_eq!(e2.has_total_overlaps(), true);
+        assert_eq!(e3.has_total_overlaps(), false);
+        assert_eq!(e4.has_total_overlaps(), true);
+        assert_eq!(e5.has_total_overlaps(), true);
+        assert_eq!(e6.has_total_overlaps(), true);
+        assert_eq!(e7.has_total_overlaps(), true);
+        assert_eq!(e8.has_total_overlaps(), false);
+        assert_eq!(e9.has_total_overlaps(), true);
+        assert_eq!(e10.has_total_overlaps(), true);
+    }
 }

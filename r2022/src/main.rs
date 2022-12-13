@@ -1,25 +1,25 @@
-use std::fmt::{Debug, Display};
 use clap::Parser;
 use color_eyre::eyre::Result;
 use scraper::html::Select;
 use scraper::{ElementRef, Html, Selector};
+use std::fmt::{Debug, Display};
 
 use crate::cli::BANNER;
-use cli::{Cli, Commands};
-use types::Output;
 use crate::day3::RuckSack;
 use crate::solution::StructSolution;
+use cli::{Cli, Commands};
+use types::Output;
 
-use crate::utils::{ask_bool_input, ask_index_input, DayData, process_answer};
+use crate::utils::{ask_bool_input, ask_index_input, process_answer, DayData};
 
 mod cli;
 mod day1;
-mod utils;
 mod day2;
-mod solution;
 mod day3;
-mod types;
 mod day4;
+mod solution;
+mod types;
+mod utils;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -39,7 +39,12 @@ fn main() -> Result<()> {
             // println!("{}", text);
             //let input_file_path = utils::get_input_file_path(day);
         }
-        Some(Commands::Desc { day, dry_run, all_html, part_2 }) => {
+        Some(Commands::Desc {
+            day,
+            dry_run,
+            all_html,
+            part_2,
+        }) => {
             println!("Fetching description for day {}", day);
             let day_data = DayData::new(day, dry_run);
             if all_html {
@@ -50,9 +55,13 @@ fn main() -> Result<()> {
                 Ok(println!("{}", pretty))
             }
         }
-        Some(Commands::Run { day, example, part_2 }) => {
+        Some(Commands::Run {
+            day,
+            example,
+            part_2,
+        }) => {
             println!("Running day {}", day);
-            let sol = day3::make_sol();
+            let sol = day4::make_sol();
             if !part_2 {
                 if example {
                     let cont = check_example_and_continue(&sol, !part_2);
@@ -63,7 +72,7 @@ fn main() -> Result<()> {
                 println!("Checking part 1 with full input");
                 let ans = sol.run_part_1();
                 println!("Answer: {}", ans);
-                let posted = sol.day_data.has_been_posted(false)?;
+                let posted = sol.day_data.check_for_posting(true)?;
                 if !posted {
                     println!("You have not posted your answer yet!");
                     if ask_bool_input("Would you like to post your answer now?", false) {
@@ -71,10 +80,9 @@ fn main() -> Result<()> {
                         match result {
                             Ok(x) => {
                                 println!("{}", x);
-                                let new_html = sol.day_data.html(false,false)?;
+                                let new_html = sol.day_data.html(false, false)?;
                                 let pretty = html2text::from_read(new_html.as_bytes(), 80);
                                 println!("{}", pretty);
-
                             }
                             Err(e) => println!("Error posting answer: {}", e),
                         }
@@ -91,7 +99,7 @@ fn main() -> Result<()> {
                 println!("Running part 2");
                 let ans = sol.run_part_2();
                 println!("Answer: {}", ans);
-                let posted = sol.day_data.has_been_posted(false)?;
+                let posted = sol.day_data.check_for_posting(false)?;
                 if !posted {
                     println!("You have not posted your answer yet!");
                     if ask_bool_input("Would you like to post your answer now?", false) {
@@ -114,7 +122,10 @@ fn main() -> Result<()> {
     }
 }
 
-fn check_example_and_continue<T, U: Output, V, W: Output>(sol: &StructSolution<T, U, V, W>, part_1: bool) -> bool {
+fn check_example_and_continue<T, U: Output, V, W: Output>(
+    sol: &StructSolution<T, U, V, W>,
+    part_1: bool,
+) -> bool {
     let suffix = if part_1 { "1" } else { "2" };
     println!("Checking example {}", suffix);
     if part_1 {
@@ -124,5 +135,5 @@ fn check_example_and_continue<T, U: Output, V, W: Output>(sol: &StructSolution<T
         let ans = sol.check_example_2();
         println!("Example matches: {}", ans.unwrap());
     };
-    !ask_bool_input("Run the full input set?", true)
+    ask_bool_input("Run the full input set?", true)
 }
