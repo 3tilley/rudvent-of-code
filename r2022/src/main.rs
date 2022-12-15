@@ -1,3 +1,7 @@
+#![allow(unused_imports)]
+#![allow(unreachable_code)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
 use clap::Parser;
 use color_eyre::eyre::Result;
 use scraper::html::Select;
@@ -14,10 +18,18 @@ use crate::utils::{ask_bool_input, ask_index_input, process_answer, DayData};
 
 mod cli;
 mod day1;
+mod day10;
+mod day11;
 mod day2;
 mod day3;
 mod day4;
+mod day5;
+mod day6;
+mod day7;
+mod day8;
+mod day9;
 mod solution;
+mod stack_analysis;
 mod types;
 mod utils;
 
@@ -61,7 +73,7 @@ fn main() -> Result<()> {
             part_2,
         }) => {
             println!("Running day {}", day);
-            let sol = day4::make_sol();
+            let sol = day11::make_sol();
             if !part_2 {
                 if example {
                     let cont = check_example_and_continue(&sol, !part_2);
@@ -72,7 +84,7 @@ fn main() -> Result<()> {
                 println!("Checking part 1 with full input");
                 let ans = sol.run_part_1();
                 println!("Answer: {}", ans);
-                let posted = sol.day_data.check_for_posting(true)?;
+                let posted = sol.day_data.check_for_posting(false)?;
                 if !posted {
                     println!("You have not posted your answer yet!");
                     if ask_bool_input("Would you like to post your answer now?", false) {

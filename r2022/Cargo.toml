@@ -10,7 +10,16 @@ cached-path = "0.5.3"
 clap = { version = "4.0.29", features = ["derive"] }
 color-eyre = "0.6.2"
 env_logger = "0.10.0"
+get-size = { version = "0.1.1", features = ["derive"] }
 html2text = "0.4.4"
+humansize = "2.1.2"
 log = "0.4.17"
 reqwest = { version = "0.11.13", features = ["blocking"] }
 scraper = "0.13.0"
+
+[profile.release]
+lto = 'fat'
+
+#[[bin]]
+#name = "main"
+#path = "src/main.rs"

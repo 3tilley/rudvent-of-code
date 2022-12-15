@@ -9,7 +9,7 @@ use std::convert::TryInto;
 use std::fmt::{format, Debug};
 use std::hash::BuildHasherDefault;
 use std::path::{Path, PathBuf};
-use std::{fs, io};
+use std::{env, fs, io};
 
 // const url template
 const DAY_TEMPLATE: &str = "https://adventofcode.com/2022/day/{day}";
@@ -84,6 +84,12 @@ impl DayData {
     pub fn example_1_path(&self) -> PathBuf {
         let mut data_path = self.data_path();
         data_path.push(format!("day{}_example_1.txt", self.day));
+        data_path
+    }
+
+    pub fn example_2_path(&self) -> PathBuf {
+        let mut data_path = self.data_path();
+        data_path.push(format!("day{}_example_2.txt", self.day));
         data_path
     }
 
@@ -181,25 +187,30 @@ impl DayData {
     pub fn example_1(&self) -> String {
         let path = self.example_1_path();
         let data = read_as_string(&path).unwrap();
-        data.trim().to_string()
+        data.to_string()
     }
 
     pub fn example_2(&self) -> String {
-        let path = self.example_1_path();
+        let path_2 = self.example_2_path();
+        let path = if path_2.exists() {
+            path_2
+        } else {
+            self.example_1_path()
+        };
         let data = read_as_string(&path).unwrap();
-        data.trim().to_string()
+        data.to_string()
     }
 
     pub fn input_1(&self) -> String {
         let path = self.input_1_path();
         let data = read_as_string(&path).unwrap();
-        data.trim().to_string()
+        data.to_string()
     }
 
     pub fn input_2(&self) -> String {
         let path = self.input_1_path();
         let data = read_as_string(&path).unwrap();
-        data.trim().to_string()
+        data.to_string()
     }
 
     pub fn check_for_posting(&self, part_1: bool) -> Result<bool> {
@@ -293,15 +304,20 @@ pub fn ask_bool_input(msg: &str, default: bool) -> bool {
     } else {
         println!("{} [y/N]", msg);
     }
-    io::stdin().read_line(&mut answer);
-    // println!("{}", answer);
-    let answer = answer.trim().to_lowercase();
-    if yeses.contains(&answer) {
-        true
-    } else if noes.contains(&answer) {
-        false
-    } else {
+    let ignore_input = env::var("IGNORE_INPUT").is_ok();
+    if ignore_input {
         default
+    } else {
+        io::stdin().read_line(&mut answer);
+        // println!("{}", answer);
+        let answer = answer.trim().to_lowercase();
+        if yeses.contains(&answer) {
+            true
+        } else if noes.contains(&answer) {
+            false
+        } else {
+            default
+        }
     }
 }
 fn find_min<'a, I>(vals: I) -> Option<&'a u32>
