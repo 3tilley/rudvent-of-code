@@ -20,6 +20,7 @@ mod cli;
 mod day1;
 mod day10;
 mod day11;
+mod day12;
 mod day2;
 mod day3;
 mod day4;
@@ -73,7 +74,7 @@ fn main() -> Result<()> {
             part_2,
         }) => {
             println!("Running day {}", day);
-            let sol = day11::make_sol();
+            let sol = day12::make_sol();
             if !part_2 {
                 if example {
                     let cont = check_example_and_continue(&sol, !part_2);
