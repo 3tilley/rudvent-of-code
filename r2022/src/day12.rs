@@ -12,6 +12,13 @@ pub struct HeightMap {
     heights: Vec<Vec<u8>>,
     current_position: (usize, usize),
     target_position: (usize, usize),
+    visited: Vec<(usize, usize)>,
+}
+
+impl HeightMap {
+    pub fn options(&self) {
+        for 
+    }
 }
 
 impl FromStr for HeightMap {
