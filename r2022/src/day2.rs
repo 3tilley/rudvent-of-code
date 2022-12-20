@@ -1,6 +1,6 @@
-use std::str::FromStr;
-use crate::DayData;
 use crate::solution::{Example, StructSolution};
+use crate::DayData;
+use std::str::FromStr;
 
 #[derive(Debug, Copy, Clone)]
 pub enum GameResult {
@@ -11,13 +11,13 @@ pub enum GameResult {
 
 impl GameResult {
     pub fn points(&self) -> u8 {
-            match self {
-                GameResult::Win => 6,
-                GameResult::Loss => 0,
-                GameResult::Draw => 3,
-            }
+        match self {
+            GameResult::Win => 6,
+            GameResult::Loss => 0,
+            GameResult::Draw => 3,
         }
     }
+}
 
 impl FromStr for GameResult {
     type Err = ();
@@ -77,7 +77,6 @@ impl Play {
             Play::Scissors => 3,
         }
     }
-
 }
 
 impl FromStr for Play {
@@ -143,10 +142,13 @@ pub fn part_1(input: Vec<GamePlan>) -> u64 {
 }
 
 pub fn part_2(input: Vec<GamePlanPart2>) -> u64 {
-    input.iter().map(|plan| {
-        let play = plan.play.achieve_result(plan.desired_result);
-        (play.points() as u64) + (plan.desired_result.points() as u64)
-    }).sum()
+    input
+        .iter()
+        .map(|plan| {
+            let play = plan.play.achieve_result(plan.desired_result);
+            (play.points() as u64) + (plan.desired_result.points() as u64)
+        })
+        .sum()
 }
 
 pub fn make_sol() -> StructSolution<Vec<GamePlan>, u64, Vec<GamePlanPart2>, u64> {

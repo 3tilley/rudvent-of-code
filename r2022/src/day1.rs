@@ -1,7 +1,7 @@
+use crate::solution::{Example, StructSolution};
 use crate::DayData;
 use color_eyre::eyre::{eyre, Result};
 use std::fmt::Display;
-use crate::solution::{Example, StructSolution};
 
 pub struct Elf {
     items: Vec<u64>,

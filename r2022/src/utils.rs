@@ -397,6 +397,14 @@ pub fn rename_file(path: PathBuf, new_name: PathBuf) -> Result<()> {
     })
 }
 
+pub fn add(u: usize, i: i32) -> Option<usize> {
+    if i.is_negative() {
+        u.checked_sub(i.wrapping_abs() as u32 as usize)
+    } else {
+        u.checked_add(i as usize)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

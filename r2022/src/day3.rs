@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use crate::DayData;
 use crate::solution::{Example, StructSolution};
+use crate::DayData;
+use std::collections::HashMap;
 
 pub struct RuckSack {
     compartment_1: Vec<char>,
@@ -35,29 +35,36 @@ pub fn prepare(input: String) -> Vec<RuckSack> {
 }
 
 fn priority(c: &char) -> u8 {
-    let digit : u8 = *c as u8;
+    let digit: u8 = *c as u8;
     match digit {
         // Uppercase chars
         65u8..=90u8 => digit - 65 + 27,
         // Lowercase chars
         97u8..=122u8 => digit - 97 + 1,
-        _ => panic!("Invalid char: {}", c)
+        _ => panic!("Invalid char: {}", c),
     }
 }
 
 pub fn part_1(input: Vec<RuckSack>) -> u64 {
-    input.iter().map(|rucksack| rucksack.repeated_item_type() as u64).sum()
+    input
+        .iter()
+        .map(|rucksack| rucksack.repeated_item_type() as u64)
+        .sum()
 }
 
 fn process_three_rucksacks(rucksacks: &[RuckSack]) -> u64 {
     let mut bigmap = HashMap::new();
     for r in rucksacks {
         let mut small_map = HashMap::new();
-        let minimap = r.compartment_1.iter().chain(r.compartment_2.iter()).fold(small_map, |mut map, c| {
-            let count = map.entry(c).or_insert(0u8);
-            *count += 1;
-            map
-        });
+        let minimap =
+            r.compartment_1
+                .iter()
+                .chain(r.compartment_2.iter())
+                .fold(small_map, |mut map, c| {
+                    let count = map.entry(c).or_insert(0u8);
+                    *count += 1;
+                    map
+                });
         for (key, value) in minimap {
             if value > 0u8 {
                 let big_count = bigmap.entry(key).or_insert(0u8);
@@ -65,24 +72,27 @@ fn process_three_rucksacks(rucksacks: &[RuckSack]) -> u64 {
             }
         }
     }
-    let priors: Vec<&char> = bigmap.iter().filter_map(|(key, value)| {
-        if *value == 3u8 {
-            Some(*key)
-        } else {
-            None
-        }
-    }).collect();
+    let priors: Vec<&char> = bigmap
+        .iter()
+        .filter_map(|(key, value)| if *value == 3u8 { Some(*key) } else { None })
+        .collect();
 
     if priors.len() == 1 {
         priority(priors[0]) as u64
     } else {
-        panic!("Invalid number of priorities: {}, {:?}", priors.len(), priors)
+        panic!(
+            "Invalid number of priorities: {}, {:?}",
+            priors.len(),
+            priors
+        )
     }
 }
 
-
 pub fn part_2(input: Vec<RuckSack>) -> u64 {
-    input.chunks(3).map(|rucksacks| process_three_rucksacks(rucksacks)).sum()
+    input
+        .chunks(3)
+        .map(|rucksacks| process_three_rucksacks(rucksacks))
+        .sum()
 }
 
 pub fn make_sol() -> StructSolution<Vec<RuckSack>, u64, Vec<RuckSack>, u64> {
@@ -132,7 +142,7 @@ mod tests {
     fn test_part_1_more_complicated() {
         let input = prepare("abcdea\nfeDDAK".to_string());
         assert_eq!(input.len(), 2);
-        assert_eq!(part_1(input), 1+30);
+        assert_eq!(part_1(input), 1 + 30);
     }
 
     #[test]
