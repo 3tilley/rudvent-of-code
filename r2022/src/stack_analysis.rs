@@ -1,9 +1,12 @@
 #![feature(asm)]
+use chrono::{DateTime, Utc};
+use chrono_humanize::{Accuracy, HumanTime, Tense};
 use humansize::{make_format, DECIMAL};
 use std::arch::asm;
 use std::arch::global_asm;
 use std::cell::Cell;
 use std::cmp;
+use std::cmp::{max, min};
 use std::usize;
 
 // This global variable tracks the highest point of the stack
@@ -83,5 +86,83 @@ pub fn fibonacci(n: i64) -> i64 {
         0 => 0,
         1 => 1,
         _ => fibonacci(n - 1) + fibonacci(n - 2),
+    }
+}
+
+pub struct StackInfo {
+    pub original_pointer: usize,
+    pub current_pointer: usize,
+    pub max_pointer: usize,
+    pub iteration: usize,
+    pub total_iterations: usize,
+    pub max_iteration: usize,
+    pub formatter: Box<dyn Fn(usize) -> String>,
+    pub start_time: DateTime<Utc>,
+}
+
+impl StackInfo {
+    pub fn new() -> StackInfo {
+        tick();
+        let p = stack_ptr();
+        StackInfo {
+            original_pointer: p,
+            current_pointer: p,
+            max_pointer: p,
+            iteration: 0,
+            total_iterations: 0,
+            max_iteration: 0,
+            formatter: Box::new(make_format(DECIMAL)),
+            start_time: Utc::now(),
+        }
+    }
+
+    pub fn show(&self, old_pointer: usize, extra: &str) {
+        let diff = old_pointer.checked_sub(self.current_pointer).unwrap_or(0);
+        let total_diff = self
+            .original_pointer
+            .checked_sub(self.current_pointer)
+            .unwrap_or(0);
+        let max_diff = self
+            .original_pointer
+            .checked_sub(self.max_pointer)
+            .unwrap_or(0);
+        let duration = (Utc::now() - self.start_time) / self.total_iterations as i32;
+        let nice = HumanTime::from(duration);
+        println!(
+            "{} / {}. Stack pointer: {} ({}). Difference: {} ({}). Largest stack: {} ({}). {} per iteration. {}",
+            self.iteration,
+            self.total_iterations,
+            total_diff,
+            (self.formatter)(total_diff),
+            diff,
+            (self.formatter)(diff),
+            max_diff,
+            (self.formatter)(max_diff),
+            nice.to_text_en(Accuracy::Precise, Tense::Present),
+            extra
+        );
+    }
+
+    pub fn update(&mut self) -> usize {
+        tick!();
+        let new_pointer = stack_ptr();
+        let old = self.current_pointer;
+        self.current_pointer = new_pointer;
+        self.iteration += 1;
+        self.max_iteration = max(self.max_iteration, self.iteration);
+        self.max_pointer = min(self.current_pointer, self.current_pointer);
+        self.total_iterations += 1;
+        old
+    }
+    pub fn update_and_show(&mut self) {
+        let old = self.update();
+        self.show(old, "")
+    }
+
+    pub fn update_and_show_every(&mut self, every: usize, extra: impl Fn() -> String) {
+        let old = self.update();
+        if self.total_iterations % every == 0 {
+            self.show(old, &extra())
+        }
     }
 }

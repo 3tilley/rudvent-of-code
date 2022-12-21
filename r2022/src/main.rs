@@ -7,6 +7,7 @@ use color_eyre::eyre::Result;
 use scraper::html::Select;
 use scraper::{ElementRef, Html, Selector};
 use std::fmt::{Debug, Display};
+use std::thread;
 
 use crate::cli::BANNER;
 use crate::day3::RuckSack;
@@ -34,9 +35,9 @@ mod stack_analysis;
 mod types;
 mod utils;
 
-fn main() -> Result<()> {
-    color_eyre::install()?;
-    env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
+const STACK_SIZE: usize = 128 * 1024 * 1024;
+
+fn inner_main() -> Result<()> {
     let cli = Cli::parse();
     // println!("{}, {:?}", cli.subcmd.unwrap().day(), utils::get_input_file_path(1));
     match cli.subcmd {
@@ -133,6 +134,16 @@ fn main() -> Result<()> {
         //None => println!("{}\n{}", BANNER, cli.about),
         None => Ok(println!("{}\n{}", BANNER, cli.debug)),
     }
+}
+
+fn main() -> Result<()> {
+    color_eyre::install()?;
+    env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
+    let child = thread::Builder::new()
+        .stack_size(STACK_SIZE)
+        .spawn(inner_main)
+        .unwrap();
+    child.join().unwrap()
 }
 
 fn check_example_and_continue<T, U: Output, V, W: Output>(
