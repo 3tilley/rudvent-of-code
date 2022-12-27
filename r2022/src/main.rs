@@ -22,6 +22,7 @@ mod day1;
 mod day10;
 mod day11;
 mod day12;
+mod day13;
 mod day2;
 mod day3;
 mod day4;
@@ -34,6 +35,7 @@ mod solution;
 mod stack_analysis;
 mod types;
 mod utils;
+mod day14;
 
 const STACK_SIZE: usize = 128 * 1024 * 1024;
 
@@ -75,7 +77,7 @@ fn inner_main() -> Result<()> {
             part_2,
         }) => {
             println!("Running day {}", day);
-            let sol = day12::make_sol();
+            let sol = day14::make_sol();
             if !part_2 {
                 if example {
                     let cont = check_example_and_continue(&sol, !part_2);
