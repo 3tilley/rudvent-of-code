@@ -48,6 +48,14 @@ impl Sector {
         ]
     }
 
+    pub fn x_len(&self) -> i32 {
+        self.end.0 - self.start.0
+    }
+
+    pub fn y_len(&self) -> i32 {
+        self.end.1 - self.start.1
+    }
+
     pub fn corners_within_sensor(&self, sensor: &Sensor) -> bool {
         sensor.all_inside(self.corners())
     }
@@ -65,13 +73,17 @@ impl Sector {
         let mut res = None;
         'outer: for x in self.start.0..=self.end.0 {
             for y in self.start.1..=self.end.1 {
+                let mut found = true;
                 for s in sensors {
                     if s.is_inside(x, y) {
+                        found = false;
                         break;
                     }
                 }
-                res = Some((x, y));
-                break 'outer;
+                if found{
+                    res = Some((x, y));
+                    break 'outer;
+                }
             }
         }
         res
@@ -248,6 +260,32 @@ pub fn part_1(mut input: Input1, run_parameter: &ExampleParam, ex_info: &mut Sta
         .count()
 }
 
+fn calculate_by_sector(run_parameter: &ExampleParam, sensors: &Vec<Sensor>, threshold: usize) -> Option<(i32, i32)> {
+    let split_factor: usize = if *run_parameter > 100 { 10 } else { 2 };
+    let max_split: usize = ((*run_parameter as f32).log2() / (split_factor as f32).log2()).floor() as usize;
+    println!("Max split = {}", max_split);
+
+    let mut res = None;
+    'outer: for pow in 0..=max_split {
+        let parts = split_factor.pow(pow as u32);
+        println!("Splitting each length in {} sections, {} in total", parts, parts * parts);
+        let splits = split_into_sectors((0, 0), (*run_parameter, *run_parameter), parts);
+        let possibles = splits.iter().filter(|sector| !sector.corners_within_any_sensor(&sensors)).collect::<Vec<_>>();
+        println!("From {} splits, {} could contain", splits.len(), possibles.len());
+        if possibles.len() <= (splits.len() / threshold) {
+            println!("Checking all: {}", possibles.len());
+            for sec in possibles {
+                if let Some(square) = calculate_by_sector(sec., )) {
+                // if let Some(square) = sec.check_full(sensors) {
+                    res = Some(square);
+                    break 'outer ;
+                }
+            }
+        }
+    }
+    res
+}
+
 pub fn part_2(input: Input2, run_parameter: &ExampleParam, ex_info: &mut StackInfo) -> Output2 {
     // This won't work if the offset is negative
     let (x_min, y_min) = input.convert(0, 0);
@@ -277,9 +315,11 @@ pub fn part_2(input: Input2, run_parameter: &ExampleParam, ex_info: &mut StackIn
         })
         .collect::<Vec<_>>();
 
-    let secs = split_into_sectors((0, 0), (*run_parameter, *run_parameter), 1);
-    let sector = secs.first().unwrap();
-    let res = sector.check_full(&sensors);
+    let res = calculate_by_sector(run_parameter, &sensors, 100);
+
+    // let secs = split_into_sectors((0, 0), (*run_parameter, *run_parameter), 1);
+    // let sector = secs.first().unwrap();
+    // let res = sector.check_full(&sensors);
 
     // println!("Counting");
     // let mut counter = 0usize;
