@@ -1,5 +1,8 @@
+use crate::stack_analysis::StackInfo;
 use crate::{DayData, Output};
-use color_eyre::eyre::eyre;
+use chrono::{DateTime, Utc};
+use chrono_humanize::{Accuracy, HumanTime, Tense};
+use color_eyre::eyre::{eyre, Result};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
@@ -24,6 +27,50 @@ impl<T: Clone> Example<T> {
         match self {
             Example::Value(v) => v.clone(),
             Example::Regex(s) => unimplemented!(),
+        }
+    }
+}
+
+pub struct Execution<T> {
+    pub result: Result<T>,
+    pub preparation_start: DateTime<Utc>,
+    pub run_start: DateTime<Utc>,
+    pub run_end: DateTime<Utc>,
+    pub stack_info: StackInfo,
+}
+
+impl<T> Execution<T> {
+    pub fn new(
+        result: Result<T>,
+        preparation_start: DateTime<Utc>,
+        run_start: DateTime<Utc>,
+        run_end: DateTime<Utc>,
+        stack_info: StackInfo,
+    ) -> Execution<T> {
+        Execution {
+            result,
+            preparation_start,
+            run_start,
+            run_end,
+            stack_info,
+        }
+    }
+
+    pub fn show_info(&self) {
+        let calc_duration = self.run_end - self.run_start;
+        let total_duration = self.run_end - self.preparation_start;
+        let calc_frac = (calc_duration.num_nanoseconds().unwrap() as f32)
+            / (total_duration.num_nanoseconds().unwrap() as f32);
+        let hc = HumanTime::from(calc_duration);
+        let tc = HumanTime::from(total_duration);
+        println!(
+            "Completed part in {}.  Calculation time: {} ({:.1}%)",
+            tc.to_text_en(Accuracy::Precise, Tense::Present),
+            hc.to_text_en(Accuracy::Precise, Tense::Present),
+            calc_frac * 100.0
+        );
+        if self.stack_info.total_iterations != 0 {
+            println!("{} iterations recorded", self.stack_info.total_iterations);
         }
     }
 }
@@ -55,23 +102,30 @@ pub trait TraitSolution<T, U, V, W> {
     // }
 }
 
-pub struct StructSolution<T, U, V, W> {
+pub struct StructSolution<T, U, V, W, X, Y> {
     pub prepare_part_1: fn(String) -> T,
-    pub calc_part_1: fn(T) -> U,
+    pub calc_part_1: fn(T, &X, &mut StackInfo) -> U,
     pub prepare_part_2: fn(String) -> V,
-    pub calc_part_2: fn(V) -> W,
+    pub calc_part_2: fn(V, &Y, &mut StackInfo) -> W,
     pub example_part_1: Example<U>,
     pub example_part_2: Example<W>,
+    pub example_1_run_parameter: (X, X),
+    pub example_2_run_parameter: (Y, Y),
     pub day_data: DayData,
 }
 
-// U is is the result of part 1, W is the result of part 2
-impl<T, U: Output, V, W: Output> StructSolution<T, U, V, W> {
-    pub fn check_example_1(&self) -> crate::Result<U> {
+// U is is the result of part 1, W is the result of part 2. X is to differentiate between the
+// example and the main run if required
+impl<T, U: Output, V, W: Output, X, Y> StructSolution<T, U, V, W, X, Y> {
+    pub fn check_example_1(&self) -> Execution<U> {
+        let prep_start = Utc::now();
+        let mut stack_info = StackInfo::new();
         let input = (self.prepare_part_1)(self.day_data.example_1());
-        let ans = (self.calc_part_1)(input);
+        let run_start = Utc::now();
+        let ans = (self.calc_part_1)(input, &self.example_1_run_parameter.0, &mut stack_info);
+        let run_end = Utc::now();
         let example_val: U = self.example_part_1.value();
-        if ans == example_val {
+        let res = if ans == example_val {
             Ok(ans)
         } else {
             Err(eyre!(
@@ -79,14 +133,20 @@ impl<T, U: Output, V, W: Output> StructSolution<T, U, V, W> {
                 example_val,
                 ans
             ))
-        }
+        };
+        let ex = Execution::new(res, prep_start, run_start, run_end, stack_info);
+        ex
     }
 
-    pub fn check_example_2(&self) -> crate::Result<W> {
+    pub fn check_example_2(&self) -> Execution<W> {
+        let prep_start = Utc::now();
+        let mut stack_info = StackInfo::new();
         let input = (self.prepare_part_2)(self.day_data.example_2());
-        let ans = (self.calc_part_2)(input);
+        let run_start = Utc::now();
+        let ans = (self.calc_part_2)(input, &self.example_2_run_parameter.0, &mut stack_info);
+        let run_end = Utc::now();
         let example_val = self.example_part_2.value();
-        if ans == example_val {
+        let res = if ans == example_val {
             Ok(ans)
         } else {
             Err(eyre!(
@@ -94,16 +154,28 @@ impl<T, U: Output, V, W: Output> StructSolution<T, U, V, W> {
                 example_val,
                 ans
             ))
-        }
+        };
+        let ex = Execution::new(res, prep_start, run_start, run_end, stack_info);
+        ex
     }
-    pub fn run_part_1(&self) -> U {
+    pub fn run_part_1(&self) -> Execution<U> {
+        let prep_start = Utc::now();
+        let mut stack_info = StackInfo::new();
         let input = (self.prepare_part_1)(self.day_data.input_1());
-        let ans = (self.calc_part_1)(input);
-        ans
+        let run_start = Utc::now();
+        let ans = (self.calc_part_1)(input, &self.example_1_run_parameter.1, &mut stack_info);
+        let run_end = Utc::now();
+        let ex = Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
+        ex
     }
-    pub fn run_part_2(&self) -> W {
+    pub fn run_part_2(&self) -> Execution<W> {
+        let prep_start = Utc::now();
+        let mut stack_info = StackInfo::new();
         let input = (self.prepare_part_2)(self.day_data.input_2());
-        let ans = (self.calc_part_2)(input);
-        ans
+        let run_start = Utc::now();
+        let ans = (self.calc_part_2)(input, &self.example_2_run_parameter.1, &mut stack_info);
+        let run_end = Utc::now();
+        let ex = Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
+        ex
     }
 }

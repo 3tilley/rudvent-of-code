@@ -10,7 +10,6 @@ use std::fmt::{Debug, Display};
 use std::thread;
 
 use crate::cli::BANNER;
-use crate::day3::RuckSack;
 use crate::solution::StructSolution;
 use cli::{Cli, Commands};
 use types::Output;
@@ -18,21 +17,21 @@ use types::Output;
 use crate::utils::{ask_bool_input, ask_index_input, process_answer, DayData};
 
 mod cli;
-mod day1;
-mod day10;
-mod day11;
-mod day12;
-mod day13;
-mod day14;
+// mod day1;
+// mod day10;
+// mod day11;
+// mod day12;
+// mod day13;
+// mod day14;
 mod day15;
-mod day2;
-mod day3;
-mod day4;
-mod day5;
-mod day6;
-mod day7;
-mod day8;
-mod day9;
+// mod day2;
+// mod day3;
+// mod day4;
+// mod day5;
+// mod day6;
+// mod day7;
+// mod day8;
+// mod day9;
 mod solution;
 mod stack_analysis;
 mod types;
@@ -87,7 +86,9 @@ fn inner_main() -> Result<()> {
                     }
                 }
                 println!("Checking part 1 with full input");
-                let ans = sol.run_part_1();
+                let ex = sol.run_part_1();
+                ex.show_info();
+                let ans = ex.result.unwrap();
                 println!("Answer: {}", ans);
                 let posted = sol.day_data.check_for_posting(false)?;
                 if !posted {
@@ -114,7 +115,9 @@ fn inner_main() -> Result<()> {
                     }
                 }
                 println!("Running part 2");
-                let ans = sol.run_part_2();
+                let ex = sol.run_part_2();
+                ex.show_info();
+                let ans = ex.result.unwrap();
                 println!("Answer: {}", ans);
                 let posted = sol.day_data.check_for_posting(false)?;
                 if !posted {
@@ -149,17 +152,21 @@ fn main() -> Result<()> {
     child.join().unwrap()
 }
 
-fn check_example_and_continue<T, U: Output, V, W: Output>(
-    sol: &StructSolution<T, U, V, W>,
+fn check_example_and_continue<T, U: Output, V, W: Output, X, Y>(
+    sol: &StructSolution<T, U, V, W, X, Y>,
     part_1: bool,
 ) -> bool {
     let suffix = if part_1 { "1" } else { "2" };
     println!("Checking example {}", suffix);
     if part_1 {
-        let ans = sol.check_example_1();
+        let ex = sol.check_example_1();
+        ex.show_info();
+        let ans = ex.result;
         println!("Example matches: {}", ans.unwrap());
     } else {
-        let ans = sol.check_example_2();
+        let ex = sol.check_example_2();
+        ex.show_info();
+        let ans = ex.result;
         println!("Example matches: {}", ans.unwrap());
     };
     ask_bool_input("Run the full input set?", true)

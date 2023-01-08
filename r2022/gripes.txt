@@ -1,0 +1,5 @@
+1. Working with generic numbers
+2. Slow intellisense
+3. Adding and subtracting from usize
+4. Randomly adding * and & to please the compiler
+5. Different stages of the compiler are annoying. Borrow checks are always at the end
