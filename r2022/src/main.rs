@@ -78,7 +78,7 @@ fn inner_main() -> Result<()> {
             part_2,
         }) => {
             println!("Running day {}", day);
-            let sol = day15::make_sol();
+            let sol = day16::make_sol();
             if !part_2 {
                 if example {
                     let cont = check_example_and_continue(&sol, !part_2);

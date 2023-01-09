@@ -96,6 +96,10 @@ pub struct StackInfo {
     pub iteration: usize,
     pub total_iterations: usize,
     pub max_iteration: usize,
+    pub depth: usize,
+    pub max_depth: usize,
+    pub iteration_at_depth: usize,
+    pub total_iterations_at_depth: usize,
     pub formatter: Box<dyn Fn(usize) -> String>,
     pub start_time: DateTime<Utc>,
 }
@@ -111,6 +115,10 @@ impl StackInfo {
             iteration: 0,
             total_iterations: 0,
             max_iteration: 0,
+            depth: 0,
+            max_depth: 0,
+            iteration_at_depth: 0,
+            total_iterations_at_depth: 0,
             formatter: Box::new(make_format(DECIMAL)),
             start_time: Utc::now(),
         }
@@ -164,5 +172,13 @@ impl StackInfo {
         if self.total_iterations % every == 0 {
             self.show(old, &extra())
         }
+    }
+
+    pub fn update_depth_iterations(&mut self, depth: usize, iteration_at_depth: usize, total_iterations_at_depth: usize) {
+        self.iteration += 1;
+        self.max_depth = max(self.max_depth, depth);
+        self.depth = depth;
+        self.iteration_at_depth = iteration_at_depth;
+        self.total_iterations_at_depth = total_iterations_at_depth;
     }
 }
