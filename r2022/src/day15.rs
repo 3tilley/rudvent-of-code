@@ -1,7 +1,6 @@
 use crate::solution::{Example, StructSolution};
 use crate::stack_analysis::StackInfo;
 use crate::DayData;
-use color_eyre::owo_colors::DynColors::Xterm;
 use num::{Integer, ToPrimitive};
 use std::cmp::{max, min};
 use std::str::FromStr;
@@ -260,29 +259,41 @@ pub fn part_1(mut input: Input1, run_parameter: &ExampleParam, ex_info: &mut Sta
         .count()
 }
 
-fn calculate_by_sector(run_parameter: &ExampleParam, sensors: &Vec<Sensor>, threshold: usize) -> Option<(i32, i32)> {
-    let split_factor: usize = if *run_parameter > 100 { 10 } else { 2 };
-    let max_split: usize = ((*run_parameter as f32).log2() / (split_factor as f32).log2()).floor() as usize;
-    println!("Max split = {}", max_split);
+fn calculate_by_sector(start: (i32, i32), end: (i32, i32), sensors: &Vec<Sensor>, threshold: usize, split_factor: usize, depth: usize, loop_details: (usize, usize)) -> Option<(i32, i32)> {
+    let length = end.0 - start.0;
+    let max_split: usize = ((length as f32).log2() / (split_factor as f32).log2()).floor() as usize;
+    let preamble: String = (1..depth).map(|_| "  ").collect();
+    // println!("{}Iteration {} of {}. Max split = {}, length = {}, depth = {}",preamble, loop_details.0, loop_details.1, max_split, length, depth);
 
     let mut res = None;
     'outer: for pow in 0..=max_split {
         let parts = split_factor.pow(pow as u32);
-        println!("Splitting each length in {} sections, {} in total", parts, parts * parts);
-        let splits = split_into_sectors((0, 0), (*run_parameter, *run_parameter), parts);
-        let possibles = splits.iter().filter(|sector| !sector.corners_within_any_sensor(&sensors)).collect::<Vec<_>>();
-        println!("From {} splits, {} could contain", splits.len(), possibles.len());
-        if possibles.len() <= (splits.len() / threshold) {
-            println!("Checking all: {}", possibles.len());
-            for sec in possibles {
-                if let Some(square) = calculate_by_sector(sec., )) {
-                // if let Some(square) = sec.check_full(sensors) {
-                    res = Some(square);
-                    break 'outer ;
+        // println!("{}Splitting each length of {} in {} sections, {} in total", preamble, length, parts, parts * parts);
+        let splits = split_into_sectors(start, end, parts);
+        let split_len = splits.len();
+        // println!("{}Checking splits", preamble);
+        let possibles = splits.into_iter().filter(|sector| !sector.corners_within_any_sensor(&sensors)).collect::<Vec<_>>();
+        // println!("{}From {} splits, {} could contain", preamble, split_len, possibles.len());
+        if possibles.len() == 0 {
+            return None
+        }
+        else if (possibles.len() <= (split_len / threshold)) | (pow == max_split) {
+            // println!("{}Checking all: {}", preamble, possibles.len());
+            for (index, sec) in possibles.iter().enumerate() {
+                let result = if sec.x_len() >= 100 {
+                    calculate_by_sector(sec.start, sec.end, sensors, threshold, split_factor, depth + 1, (index, possibles.len()))
+                } else {
+                    sec.check_full(sensors)
+                };
+                if let Some(square) = result {
+                    // if let Some(square) = sec.check_full(sensors) {
+                    return Some(square)
                 }
             }
+            break 'outer ;
         }
     }
+
     res
 }
 
@@ -315,7 +326,9 @@ pub fn part_2(input: Input2, run_parameter: &ExampleParam, ex_info: &mut StackIn
         })
         .collect::<Vec<_>>();
 
-    let res = calculate_by_sector(run_parameter, &sensors, 100);
+    let split_factor: usize = if *run_parameter > 100 { 5 } else { 2 };
+    let threshold: usize = if *run_parameter > 100 { 20 } else { 4 };
+    let res = calculate_by_sector((0,0), (*run_parameter, *run_parameter), &sensors, threshold, split_factor, 1, (1,1));
 
     // let secs = split_into_sectors((0, 0), (*run_parameter, *run_parameter), 1);
     // let sector = secs.first().unwrap();
@@ -408,7 +421,7 @@ pub fn part_2(input: Input2, run_parameter: &ExampleParam, ex_info: &mut StackIn
     // }
     let (x, y) = res.unwrap();
     // let (x, y) = (0, 0);
-    ((4_000_000 * x) + y) as Output2
+    ((4_000_000 * (x as usize)) + (y as usize))
 }
 
 pub fn make_sol() -> StructSolution<Input1, Output1, Input2, Output2, ExampleParam, ExampleParam> {

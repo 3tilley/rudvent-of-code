@@ -17,6 +17,7 @@ html2text = "0.4.4"
 humansize = "2.1.2"
 log = "0.4.17"
 num = { version = "0.4.0", features = ["num-bigint"] }
+regex = "1.7.1"
 reqwest = { version = "0.11.13", features = ["blocking"] }
 scraper = "0.13.0"
 
