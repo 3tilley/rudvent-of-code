@@ -20,17 +20,14 @@ pub struct Valve {
     name: String,
     flow: usize,
     links: Vec<ValveId>,
-    open: bool,
-    // Record what the flow was the last time this node was visited
-    visited_at_flow: Option<usize>
 }
 
 impl Valve {
-    pub fn options(&self) ->  impl Iterator<Item=Action> + '_ {
+    pub fn options(&self, is_open: bool) ->  impl Iterator<Item=Action> + '_ {
         let moves = self.links.iter().map(|valve_id| Action::Move {to: valve_id.to_string() });
         let mut all = once(Action::Open).chain(moves);
 
-        if self.open {
+        if is_open {
             // return moves
             // return empty().chain(moves)
             all.next();
@@ -39,8 +36,65 @@ impl Valve {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct ValveState {
+    open: bool,
+    // Record what the flow was the last time this node was visited
+    visited_at_flow: Option<usize>
+}
+
+impl ValveState {
+    pub fn new() -> ValveState {
+        ValveState { open: false, visited_at_flow: None }
+    }
+}
+
 pub struct TunnelMap {
     valves: HashMap<ValveId, Valve>,
+    state: HashMap<ValveId, ValveState>,
+}
+
+impl TunnelMap {
+    pub fn update_visit(&mut self, valve_id: &ValveId, current_flow: usize) -> Option<usize> {
+        // If we've already been here, and haven't turned any valves since, cancel it
+        let mut valve = self.state[valve_id];
+        if let Some(flow) = valve.visited_at_flow {
+            if flow == current_flow {
+                return None;
+            }
+        }
+        let old = valve.visited_at_flow;
+        valve.visited_at_flow = Some(current_flow);
+        old
+    }
+
+    pub fn open(&mut self, valve_id: &ValveId) {
+        let mut valve = self.state[valve_id];
+        if valve.open {
+            panic!("Shouldn't reach here");
+        } else {
+            valve.open = true;
+        }
+    }
+
+    pub fn close(&mut self, valve_id: &ValveId) {
+        let mut valve = self.state[valve_id];
+        if !valve.open {
+            panic!("Shouldn't reach here");
+        } else {
+            valve.open = false;
+        }
+    }
+
+    pub fn restore(&mut self, valve_id: &ValveId, old_visit: Option<usize>) {
+        let mut valve = self.state[valve_id];
+        valve = ValveState{ open: valve.open, visited_at_flow: old_visit };
+    }
+
+    pub fn is_open(&self, valve_id: &ValveId) -> bool {
+        // If we've already been here, and haven't turned any valves since, cancel it
+        self.state[valve_id].open
+    }
 }
 
 pub enum Action {
@@ -60,12 +114,17 @@ impl FromStr for TunnelMap {
             let caps = re.captures(line).expect(&format!("Error unpacking {}", line));
             let links: Vec<String> = caps["links"].split(", ").map(str::to_string).collect();
             let name = (&caps["valve"]).to_string();
-            (name.clone(), Valve {id: name.clone(), name , flow: (&caps["flow"]).parse().unwrap(), links, open: false, visited_at_flow: None })
+            (name.clone(), Valve {id: name.clone(), name , flow: (&caps["flow"]).parse().unwrap(), links })
         });
 
         let valves = HashMap::from_iter(valve_vec);
+        let state_vec = valves.iter().map(|(key, valve)| {
+            (key.clone(), ValveState::new())
+        });
 
-        Ok(TunnelMap{ valves })
+        let state = HashMap::from_iter(state_vec);
+
+        Ok(TunnelMap{ valves, state })
     }
 }
 
@@ -73,32 +132,33 @@ pub fn prepare(input: String) -> Input1 {
     TunnelMap::from_str(&*input).unwrap()
 }
 
-pub fn inner(tunnel: &mut TunnelMap, current: &mut Valve, total_flow : usize, current_flow: usize, current_iteration: usize, ex_info: &mut StackInfo) -> usize {
+pub fn inner(tunnel: &mut TunnelMap, current: &Valve, total_flow : usize, current_flow: usize, current_iteration: usize, ex_info: &mut StackInfo) -> usize {
     if current_iteration == 30 {
         return total_flow + current_flow
     }
 
-    let options = &current.options();
-    // let opts_len = &options.size_hint().1.unwrap();
+    let current_state = tunnel.state[&current.id];
+    let options = current.options(current_state.open);
+    let opts_len = options.size_hint().1.unwrap();
     options.enumerate().filter_map(|(i, a)| {
-        ex_info.update_depth_iterations(current_iteration, i, *opts_len);
+        ex_info.update_depth_iterations(current_iteration, i, opts_len);
         match a {
             Action::Move { to } => {
-                let mut new_valve = tunnel.valves.get(&*to).unwrap().clone();
-                // If we've already been here, and haven't turned any valves since, cancel it
-                if let Some(last) = new_valve.visited_at_flow {
-                    if last == current_flow {
-                        return None;
-                    } else {
-                        new_valve.visited_at_flow = Some(current_flow);
-                    }
+                let old = tunnel.update_visit(&to, current_flow);
+                // let old_state = ValveState { open: tunnel.is_open(&to), visited_at_flow: old };
+                if old.is_none() {
+                    return None;
                 }
+                let mut new_valve = tunnel.valves.get(&*to).unwrap().clone();
                 let res = inner(tunnel, &mut new_valve, total_flow + current_flow, current_flow, current_iteration + 1, ex_info);
+                tunnel.restore(&to, old);
                 Some(res)
             },
             Action::Open => {
-                current.open = true;
-                Some(inner(tunnel, current, total_flow + current_flow, current_flow + current.flow, current_iteration + 1, ex_info))
+                tunnel.open(&current.id);
+                let res = inner(tunnel, current, total_flow + current_flow, current_flow + current.flow, current_iteration + 1, ex_info);
+                tunnel.close(&current.id);
+                Some(res)
             },
         }
     }).max().unwrap()
