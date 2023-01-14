@@ -3,7 +3,7 @@ use std::iter::{empty, once};
 use std::str::FromStr;
 use regex::Regex;
 use crate::solution::{Example, StructSolution};
-use crate::stack_analysis::StackInfo;
+use crate::stack_analysis::{Every, StackInfo};
 use crate::DayData;
 
 type Input1 = TunnelMap;
@@ -14,6 +14,8 @@ type ExampleParam = ();
 
 type ValveId = String;
 
+const MAX_MOVES: usize = 30;
+
 #[derive(Debug, Clone)]
 pub struct Valve {
     id: ValveId,
@@ -23,11 +25,11 @@ pub struct Valve {
 }
 
 impl Valve {
-    pub fn options(&self, is_open: bool) ->  impl Iterator<Item=Action> + '_ {
+    pub fn options(&self, include_open: bool) ->  impl Iterator<Item=Action> + '_ {
         let moves = self.links.iter().map(|valve_id| Action::Move {to: valve_id.to_string() });
         let mut all = once(Action::Open).chain(moves);
 
-        if is_open {
+        if !include_open {
             // return moves
             // return empty().chain(moves)
             all.next();
@@ -38,26 +40,97 @@ impl Valve {
 
 #[derive(Copy, Clone, Debug)]
 pub struct ValveState {
-    open: bool,
+    flowing: bool,
     // Record what the flow was the last time this node was visited
     visited_at_flow: Option<usize>
 }
 
 impl ValveState {
     pub fn new() -> ValveState {
-        ValveState { open: false, visited_at_flow: None }
+        ValveState { flowing: false, visited_at_flow: None }
     }
 }
 
 pub struct TunnelMap {
     valves: HashMap<ValveId, Valve>,
-    state: HashMap<ValveId, ValveState>,
+    zero_flows: usize,
+    travel_times: HashMap<(ValveId, ValveId), u8>,
 }
 
 impl TunnelMap {
-    pub fn update_visit(&mut self, valve_id: &ValveId, current_flow: usize) -> Option<usize> {
+    pub fn new(valves: HashMap<ValveId, Valve>) -> TunnelMap {
+        let zero_flows = valves.iter().filter(|(k, v)| {
+            v.flow == 0
+        }).count();
+
+        let travel_times = TunnelMap::calculate_travel_times(&valves);
+
+        TunnelMap { valves, zero_flows, travel_times}
+    }
+
+    pub fn calculate_travel_times(valves: &HashMap<ValveId, Valve>) -> HashMap<(ValveId, ValveId), u8> {
+        // We need to know how many steps it takes for each valve to get to each other valve. We
+        // won't add the "diagonals" i.e. the time it takes for AA to get to AA
+        let expected = (valves.len() - 1) * (valves.len());
+        let mut map = HashMap::<(ValveId, ValveId), u8>::with_capacity(expected);
+        for (valve_id, valve)  in valves {
+            for link in &valve.links {
+                map.insert((valve_id.clone(), link.clone()), 1);
+            }
+        }
+        for step in 2..u8::MAX {
+            println!("Step: {}, \n{:?}", step, map);
+            let mut to_add = Vec::new();
+            for ((v1, v2), &d) in &map {
+                if d == (step - 1) {
+                    for link in &valves.get(v2).unwrap().links {
+                        if (v1 != link) & !map.contains_key(&(v1.clone(), link.clone())) {
+                            to_add.push((v1.clone(), link.clone()));
+                        }
+                    }
+                }
+            }
+            for new_link in to_add {
+                map.insert(new_link, step);
+            }
+            if map.len() == expected {
+                break;
+            }
+        }
+        map
+    }
+}
+
+pub struct TunnelState {
+    state: HashMap<ValveId, ValveState>,
+    num: usize,
+    num_open: usize,
+    zero_flows: usize,
+    most_flows: HashMap<String, (usize, usize)>
+}
+
+impl TunnelState {
+
+    pub fn new(tunnel_map: &TunnelMap) -> TunnelState {
+        let state_vec = tunnel_map.valves.iter().map(|(key, valve)| {
+            (key.clone(), ValveState::new())
+        });
+
+        let state = HashMap::from_iter(state_vec);
+        let num = state.len();
+        let most_flows = HashMap::new();
+        TunnelState{
+            state,
+            num: 0,
+            num_open: 0,
+            zero_flows: tunnel_map.zero_flows,
+            most_flows,
+        }
+    }
+
+    pub fn update_visit(&mut self, valve_id: &ValveId, current_flow: usize) -> Option<Option<usize>> {
         // If we've already been here, and haven't turned any valves since, cancel it
-        let mut valve = self.state[valve_id];
+        let mut valve = self.state.get_mut(valve_id).unwrap();
         if let Some(flow) = valve.visited_at_flow {
             if flow == current_flow {
                 return None;
@@ -65,35 +138,66 @@ impl TunnelMap {
         }
         let old = valve.visited_at_flow;
         valve.visited_at_flow = Some(current_flow);
-        old
+        Some(old)
     }
 
-    pub fn open(&mut self, valve_id: &ValveId) {
-        let mut valve = self.state[valve_id];
-        if valve.open {
-            panic!("Shouldn't reach here");
+    pub fn open(&mut self, valve_id: &ValveId, iteration: usize, current_flow: usize) -> bool {
+        // println!("Opening {}", valve_id);
+        let mut valve = self.state.get_mut(valve_id).unwrap();
+        if valve.flowing {
+            panic!("Tried to open an open valve");
         } else {
-            valve.open = true;
+            self.num_open += 1;
+            valve.flowing = true;
         }
+        let open_states = self.state.iter().filter_map(|(k, v)| if v.flowing {Some(k.clone())} else {None}).collect::<String>();
+        match self.most_flows.get_mut(&*open_states) {
+            None => {
+                self.most_flows.insert(open_states, (iteration, current_flow));
+                true
+            }
+            Some((best_iteration, best_flow)) => {
+                if (iteration >= *best_iteration) & (current_flow <= *best_flow) {
+                    false
+                } else {
+                    self.most_flows.insert(open_states, (iteration, current_flow));
+                    true
+                }
+            }
+        }
+
     }
 
     pub fn close(&mut self, valve_id: &ValveId) {
-        let mut valve = self.state[valve_id];
-        if !valve.open {
-            panic!("Shouldn't reach here");
+        // println!("Closing {}", valve_id);
+        let mut valve = self.state.get_mut(valve_id).unwrap();
+        if !valve.flowing {
+            panic!("Tried to close a closed valve");
         } else {
-            valve.open = false;
+            self.num_open -= 1;
+            valve.flowing = false;
         }
     }
 
     pub fn restore(&mut self, valve_id: &ValveId, old_visit: Option<usize>) {
-        let mut valve = self.state[valve_id];
-        valve = ValveState{ open: valve.open, visited_at_flow: old_visit };
+        let mut valve = self.state.get_mut(valve_id).unwrap();
+        *valve = ValveState{ flowing: valve.flowing, visited_at_flow: old_visit };
     }
 
     pub fn is_open(&self, valve_id: &ValveId) -> bool {
         // If we've already been here, and haven't turned any valves since, cancel it
-        self.state[valve_id].open
+        self.state[valve_id].flowing
+    }
+
+    pub fn show_state(&self) -> String {
+        let mut s = String::new();
+        self.state.iter().map(|(k, v)| {
+            format!("{}, {:?}\n", k, v)
+        }).collect::<String>()
+    }
+
+    pub fn all_open(&self) -> bool {
+        (self.num_open + self.zero_flows) == self.num
     }
 }
 
@@ -118,13 +222,7 @@ impl FromStr for TunnelMap {
         });
 
         let valves = HashMap::from_iter(valve_vec);
-        let state_vec = valves.iter().map(|(key, valve)| {
-            (key.clone(), ValveState::new())
-        });
-
-        let state = HashMap::from_iter(state_vec);
-
-        Ok(TunnelMap{ valves, state })
+        Ok(TunnelMap::new(valves))
     }
 }
 
@@ -132,41 +230,103 @@ pub fn prepare(input: String) -> Input1 {
     TunnelMap::from_str(&*input).unwrap()
 }
 
-pub fn inner(tunnel: &mut TunnelMap, current: &Valve, total_flow : usize, current_flow: usize, current_iteration: usize, ex_info: &mut StackInfo) -> usize {
+// Previous attempt at solution, just using random walks and seeing where things ended up
+pub fn old_inner(tunnel: &TunnelMap, tunnel_state: &mut TunnelState, current: &Valve, total_flow : usize, current_flow: usize, current_iteration: usize, ex_info: &mut StackInfo) -> Option<usize> {
     if current_iteration == 30 {
-        return total_flow + current_flow
+        return Some(total_flow + current_flow)
+    } else if tunnel_state.all_open() {
+        return Some(total_flow + (31 - current_iteration) * current_flow)
     }
 
-    let current_state = tunnel.state[&current.id];
-    let options = current.options(current_state.open);
+    ex_info.show_depth(Some(Every::Count { count: 100_000}));
+    // println!("{}", tunnel.show_state());
+
+    let current_state = tunnel_state.state[&current.id];
+    let include_open = !current_state.flowing & (current.flow > 0);
+    let options = current.options(include_open);
     let opts_len = options.size_hint().1.unwrap();
+    // println!("Number of options: {}", opts_len);
     options.enumerate().filter_map(|(i, a)| {
-        ex_info.update_depth_iterations(current_iteration, i, opts_len);
+        ex_info.update_depth_iterations(current_iteration, i+1, opts_len);
         match a {
             Action::Move { to } => {
-                let old = tunnel.update_visit(&to, current_flow);
+                let old = tunnel_state.update_visit(&to, current_flow);
                 // let old_state = ValveState { open: tunnel.is_open(&to), visited_at_flow: old };
-                if old.is_none() {
-                    return None;
+                match old {
+                    None => None,
+                    Some(opt_flow) => {
+                        let mut new_valve = tunnel.valves.get(&*to).unwrap();
+                        let res = inner(tunnel, tunnel_state, new_valve, total_flow + current_flow, current_flow, current_iteration + 1, ex_info);
+                        tunnel_state.restore(&to, opt_flow);
+                        res
+                    }
                 }
-                let mut new_valve = tunnel.valves.get(&*to).unwrap().clone();
-                let res = inner(tunnel, &mut new_valve, total_flow + current_flow, current_flow, current_iteration + 1, ex_info);
-                tunnel.restore(&to, old);
-                Some(res)
             },
             Action::Open => {
-                tunnel.open(&current.id);
-                let res = inner(tunnel, current, total_flow + current_flow, current_flow + current.flow, current_iteration + 1, ex_info);
-                tunnel.close(&current.id);
-                Some(res)
+                match tunnel_state.open(&current.id, current_iteration, current_flow) {
+                    true => {
+                        let res = inner(tunnel, tunnel_state, current, total_flow + current_flow, current_flow + current.flow, current_iteration + 1, ex_info);
+                        tunnel_state.close(&current.id);
+                        res
+                    }
+                    false => {
+                        tunnel_state.close(&current.id);
+                        None
+                    }
+                }
             },
         }
-    }).max().unwrap()
+    }).max()
+}
+
+
+pub fn inner(tunnel: &TunnelMap, tunnel_state: &mut TunnelState, current: &Valve, total_flow : usize, current_flow: usize, current_iteration: usize, ex_info: &mut StackInfo) -> Option<usize> {
+    if current_iteration == MAX_MOVES {
+        return Some(total_flow + current_flow)
+    } else if tunnel_state.all_open() {
+        return Some(total_flow + (MAX_MOVES + 1 - current_iteration) * current_flow)
+    }
+
+    ex_info.show_depth(Some(Every::Count { count: 100}));
+    // println!("{}", tunnel_state.show_state());
+
+    let current_state = tunnel_state.state[&current.id];
+    let options : Vec<(ValveId, usize)>= tunnel_state.state.iter().filter_map(|(k, v)| {
+        if (k != &current.id) & !v.flowing {
+            let key = k.to_string();
+            let d = *tunnel.travel_times.get(&(k.to_string(), current.id.to_string())).unwrap() as usize;
+            if d < MAX_MOVES - current_iteration {
+                Some((key.clone(), d))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }).collect();
+    let opts_len = options.len();
+    // println!("Number of options: {}", opts_len);
+    options.iter().enumerate().filter_map(|(i, (v, d))| {
+        ex_info.update_depth_iterations(current_iteration, i+1, opts_len);
+        match tunnel_state.open(v, current_iteration + d, current_flow) {
+            true => {
+                let new_valve = tunnel.valves.get(v).unwrap();
+                let res = inner(tunnel, tunnel_state, new_valve, total_flow + (d * current_flow), current_flow + new_valve.flow, current_iteration + d, ex_info);
+                tunnel_state.close(v);
+                res
+            }
+            false => {
+                tunnel_state.close(v);
+                None
+            }
+        }
+    }).max()
 }
 
 pub fn part_1(mut input: Input1, run_parameter: &ExampleParam, ex_info: &mut StackInfo) -> Output1 {
     let mut start = input.valves.get("AA").unwrap().clone();
-    inner(&mut input, &mut start, 0, 0, 1, ex_info )
+    let mut state = TunnelState::new(&input);
+    inner(&input, &mut state, &mut start, 0, 0, 1, ex_info ).unwrap()
 }
 
 pub fn part_2(mut input: Input1, run_parameter: &ExampleParam, ex_info: &mut StackInfo) -> Output1 {
@@ -186,4 +346,27 @@ pub fn make_sol() -> StructSolution<Input1, Output1, Input2, Output2, ExamplePar
         day_data: DayData::new(16, false),
     };
     struct_solution
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generate_options() {
+        let v = Valve{
+            id: "".to_string(),
+            name: "".to_string(),
+            flow: 0,
+            links: vec!["AA".to_string(), "BB".to_string()],
+        };
+        assert_eq!(v.options(false).count(), 3);
+        assert_eq!(v.options(true).count(), 2);
+    }
+
+    #[test]
+    fn basic_test() {
+        // let s = ""
+        ()
+    }
 }

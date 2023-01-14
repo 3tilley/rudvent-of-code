@@ -1,5 +1,5 @@
 #![feature(asm)]
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use chrono_humanize::{Accuracy, HumanTime, Tense};
 use humansize::{make_format, DECIMAL};
 use std::arch::asm;
@@ -8,6 +8,8 @@ use std::cell::Cell;
 use std::cmp;
 use std::cmp::{max, min};
 use std::usize;
+use color_eyre::owo_colors::OwoColorize;
+use num::Integer;
 
 // This global variable tracks the highest point of the stack
 thread_local!(static STACK_END: Cell<usize> = Cell::new(usize::MAX));
@@ -79,14 +81,47 @@ pub fn measure<T, F: FnOnce() -> T>(callback: F) -> (T, usize) {
     (r, stack_start - stack_end)
 }
 
-/// Example recursive function
-pub fn fibonacci(n: i64) -> i64 {
-    tick!();
-    match n {
-        0 => 0,
-        1 => 1,
-        _ => fibonacci(n - 1) + fibonacci(n - 2),
+pub struct ProgressTracker {
+    pub depth_counts: Vec<(usize, usize)>,
+    pub track_level: usize,
+}
+
+impl ProgressTracker {
+    pub fn new(track_level: usize) -> ProgressTracker {
+        ProgressTracker { depth_counts: vec![], track_level }
     }
+
+    pub fn update(&mut self, depth: usize, iteration_at_depth: usize, max_iteration_at_depth: usize) -> Result<bool, ()> {
+        if depth <= self.track_level {
+            if depth > self.depth_counts.len() + 1 {
+                Err(())
+            } else if depth == self.depth_counts.len() + 1 {
+                self.depth_counts.push((iteration_at_depth, max_iteration_at_depth));
+                Ok(true)
+            } else {
+                self.depth_counts[depth - 1] = (iteration_at_depth, max_iteration_at_depth);
+                Ok(true)
+            }
+        } else {
+            Ok(false)
+        }
+    }
+
+    pub fn progress_est(&self) -> (usize, usize) {
+        self.depth_counts.iter().fold((0,1), |acc, &i| {
+            ((acc.0 * i.1) + (i.0 - 1), acc.1 * i.1)
+        })
+    }
+
+    pub fn progress_frac(&self) -> f32 {
+        let (num, den) = self.progress_est();
+        (num as f32) / (den as f32)
+    }
+}
+
+pub enum Every {
+    Time {period: Duration},
+    Count {count: usize},
 }
 
 pub struct StackInfo {
@@ -102,7 +137,9 @@ pub struct StackInfo {
     pub total_iterations_at_depth: usize,
     pub formatter: Box<dyn Fn(usize) -> String>,
     pub start_time: DateTime<Utc>,
+    pub depth_tracker: ProgressTracker,
 }
+
 
 impl StackInfo {
     pub fn new() -> StackInfo {
@@ -121,6 +158,7 @@ impl StackInfo {
             total_iterations_at_depth: 0,
             formatter: Box::new(make_format(DECIMAL)),
             start_time: Utc::now(),
+            depth_tracker: ProgressTracker::new(3),
         }
     }
 
@@ -175,10 +213,56 @@ impl StackInfo {
     }
 
     pub fn update_depth_iterations(&mut self, depth: usize, iteration_at_depth: usize, total_iterations_at_depth: usize) {
-        self.iteration += 1;
+        self.total_iterations += 1;
         self.max_depth = max(self.max_depth, depth);
         self.depth = depth;
         self.iteration_at_depth = iteration_at_depth;
         self.total_iterations_at_depth = total_iterations_at_depth;
+        self.depth_tracker.update(depth, iteration_at_depth, total_iterations_at_depth);
+    }
+
+    pub fn show_depth(&self, every: Option<Every>) {
+        let print = {
+            match every {
+                None => true,
+                Some(ev) => {
+                    match ev {
+                        Every::Time { period } => {
+                            todo!("Haven't done this yet")
+                        }
+                        Every::Count { count } => {
+                            self.total_iterations.mod_floor(&count) == 0
+                        }
+                    }
+                }
+            }
+        };
+        if print {
+            println!("{:?}", self.depth_tracker.depth_counts);
+            println!("{} of {} iterations and depth {}\n{} iterations in total\nEst {:.2}% complete", self.iteration_at_depth, self.total_iterations_at_depth, self.depth, self.total_iterations, self.depth_tracker.progress_frac() * 100.0)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn progress_tracker_zero() {
+        let mut t = ProgressTracker::new(3);
+        t.update(1, 1, 4);
+        t.update(2, 1, 3);
+        t.update(3, 1, 8);
+        assert_eq!(t.progress_frac(), 0.0)
+    }
+
+    #[test]
+    fn progress_tracker() {
+        let mut t = ProgressTracker::new(3);
+        t.update(1, 3, 4);
+        t.update(2, 2, 2);
+        t.update(3, 1, 8);
+        assert_eq!(t.progress_frac(), 0.625)
     }
 }
