@@ -32,11 +32,11 @@ mod day15;
 // mod day7;
 // mod day8;
 // mod day9;
+mod day16;
 mod solution;
 mod stack_analysis;
 mod types;
 mod utils;
-mod day16;
 
 const STACK_SIZE: usize = 128 * 1024 * 1024;
 

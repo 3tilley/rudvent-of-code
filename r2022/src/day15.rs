@@ -79,7 +79,7 @@ impl Sector {
                         break;
                     }
                 }
-                if found{
+                if found {
                     res = Some((x, y));
                     break 'outer;
                 }
@@ -259,7 +259,15 @@ pub fn part_1(mut input: Input1, run_parameter: &ExampleParam, ex_info: &mut Sta
         .count()
 }
 
-fn calculate_by_sector(start: (i32, i32), end: (i32, i32), sensors: &Vec<Sensor>, threshold: usize, split_factor: usize, depth: usize, loop_details: (usize, usize)) -> Option<(i32, i32)> {
+fn calculate_by_sector(
+    start: (i32, i32),
+    end: (i32, i32),
+    sensors: &Vec<Sensor>,
+    threshold: usize,
+    split_factor: usize,
+    depth: usize,
+    loop_details: (usize, usize),
+) -> Option<(i32, i32)> {
     let length = end.0 - start.0;
     let max_split: usize = ((length as f32).log2() / (split_factor as f32).log2()).floor() as usize;
     let preamble: String = (1..depth).map(|_| "  ").collect();
@@ -272,25 +280,35 @@ fn calculate_by_sector(start: (i32, i32), end: (i32, i32), sensors: &Vec<Sensor>
         let splits = split_into_sectors(start, end, parts);
         let split_len = splits.len();
         // println!("{}Checking splits", preamble);
-        let possibles = splits.into_iter().filter(|sector| !sector.corners_within_any_sensor(&sensors)).collect::<Vec<_>>();
+        let possibles = splits
+            .into_iter()
+            .filter(|sector| !sector.corners_within_any_sensor(&sensors))
+            .collect::<Vec<_>>();
         // println!("{}From {} splits, {} could contain", preamble, split_len, possibles.len());
         if possibles.len() == 0 {
-            return None
-        }
-        else if (possibles.len() <= (split_len / threshold)) | (pow == max_split) {
+            return None;
+        } else if (possibles.len() <= (split_len / threshold)) | (pow == max_split) {
             // println!("{}Checking all: {}", preamble, possibles.len());
             for (index, sec) in possibles.iter().enumerate() {
                 let result = if sec.x_len() >= 100 {
-                    calculate_by_sector(sec.start, sec.end, sensors, threshold, split_factor, depth + 1, (index, possibles.len()))
+                    calculate_by_sector(
+                        sec.start,
+                        sec.end,
+                        sensors,
+                        threshold,
+                        split_factor,
+                        depth + 1,
+                        (index, possibles.len()),
+                    )
                 } else {
                     sec.check_full(sensors)
                 };
                 if let Some(square) = result {
                     // if let Some(square) = sec.check_full(sensors) {
-                    return Some(square)
+                    return Some(square);
                 }
             }
-            break 'outer ;
+            break 'outer;
         }
     }
 
@@ -328,7 +346,15 @@ pub fn part_2(input: Input2, run_parameter: &ExampleParam, ex_info: &mut StackIn
 
     let split_factor: usize = if *run_parameter > 100 { 5 } else { 2 };
     let threshold: usize = if *run_parameter > 100 { 20 } else { 4 };
-    let res = calculate_by_sector((0,0), (*run_parameter, *run_parameter), &sensors, threshold, split_factor, 1, (1,1));
+    let res = calculate_by_sector(
+        (0, 0),
+        (*run_parameter, *run_parameter),
+        &sensors,
+        threshold,
+        split_factor,
+        1,
+        (1, 1),
+    );
 
     // let secs = split_into_sectors((0, 0), (*run_parameter, *run_parameter), 1);
     // let sector = secs.first().unwrap();

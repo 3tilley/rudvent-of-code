@@ -1,15 +1,15 @@
 #![feature(asm)]
 use chrono::{DateTime, Duration, Utc};
 use chrono_humanize::{Accuracy, HumanTime, Tense};
+use color_eyre::owo_colors::OwoColorize;
 use humansize::{make_format, DECIMAL};
+use num::Integer;
 use std::arch::asm;
 use std::arch::global_asm;
 use std::cell::Cell;
 use std::cmp;
 use std::cmp::{max, min};
 use std::usize;
-use color_eyre::owo_colors::OwoColorize;
-use num::Integer;
 
 // This global variable tracks the highest point of the stack
 thread_local!(static STACK_END: Cell<usize> = Cell::new(usize::MAX));
@@ -88,15 +88,24 @@ pub struct ProgressTracker {
 
 impl ProgressTracker {
     pub fn new(track_level: usize) -> ProgressTracker {
-        ProgressTracker { depth_counts: vec![], track_level }
+        ProgressTracker {
+            depth_counts: vec![],
+            track_level,
+        }
     }
 
-    pub fn update(&mut self, depth: usize, iteration_at_depth: usize, max_iteration_at_depth: usize) -> Result<bool, ()> {
+    pub fn update(
+        &mut self,
+        depth: usize,
+        iteration_at_depth: usize,
+        max_iteration_at_depth: usize,
+    ) -> Result<bool, ()> {
         if depth <= self.track_level {
             if depth > self.depth_counts.len() + 1 {
                 Err(())
             } else if depth == self.depth_counts.len() + 1 {
-                self.depth_counts.push((iteration_at_depth, max_iteration_at_depth));
+                self.depth_counts
+                    .push((iteration_at_depth, max_iteration_at_depth));
                 Ok(true)
             } else {
                 self.depth_counts[depth - 1] = (iteration_at_depth, max_iteration_at_depth);
@@ -108,9 +117,9 @@ impl ProgressTracker {
     }
 
     pub fn progress_est(&self) -> (usize, usize) {
-        self.depth_counts.iter().fold((0,1), |acc, &i| {
-            ((acc.0 * i.1) + (i.0 - 1), acc.1 * i.1)
-        })
+        self.depth_counts
+            .iter()
+            .fold((0, 1), |acc, &i| ((acc.0 * i.1) + (i.0 - 1), acc.1 * i.1))
     }
 
     pub fn progress_frac(&self) -> f32 {
@@ -120,8 +129,8 @@ impl ProgressTracker {
 }
 
 pub enum Every {
-    Time {period: Duration},
-    Count {count: usize},
+    Time { period: Duration },
+    Count { count: usize },
 }
 
 pub struct StackInfo {
@@ -139,7 +148,6 @@ pub struct StackInfo {
     pub start_time: DateTime<Utc>,
     pub depth_tracker: ProgressTracker,
 }
-
 
 impl StackInfo {
     pub fn new() -> StackInfo {
@@ -212,34 +220,43 @@ impl StackInfo {
         }
     }
 
-    pub fn update_depth_iterations(&mut self, depth: usize, iteration_at_depth: usize, total_iterations_at_depth: usize) {
+    pub fn update_depth_iterations(
+        &mut self,
+        depth: usize,
+        iteration_at_depth: usize,
+        total_iterations_at_depth: usize,
+    ) {
         self.total_iterations += 1;
         self.max_depth = max(self.max_depth, depth);
         self.depth = depth;
         self.iteration_at_depth = iteration_at_depth;
         self.total_iterations_at_depth = total_iterations_at_depth;
-        self.depth_tracker.update(depth, iteration_at_depth, total_iterations_at_depth);
+        self.depth_tracker
+            .update(depth, iteration_at_depth, total_iterations_at_depth);
     }
 
     pub fn show_depth(&self, every: Option<Every>) {
         let print = {
             match every {
                 None => true,
-                Some(ev) => {
-                    match ev {
-                        Every::Time { period } => {
-                            todo!("Haven't done this yet")
-                        }
-                        Every::Count { count } => {
-                            self.total_iterations.mod_floor(&count) == 0
-                        }
+                Some(ev) => match ev {
+                    Every::Time { period } => {
+                        todo!("Haven't done this yet")
                     }
-                }
+                    Every::Count { count } => self.total_iterations.mod_floor(&count) == 0,
+                },
             }
         };
         if print {
             println!("{:?}", self.depth_tracker.depth_counts);
-            println!("{} of {} iterations and depth {}\n{} iterations in total\nEst {:.2}% complete", self.iteration_at_depth, self.total_iterations_at_depth, self.depth, self.total_iterations, self.depth_tracker.progress_frac() * 100.0)
+            println!(
+                "{} of {} iterations and depth {}\n{} iterations in total\nEst {:.2}% complete",
+                self.iteration_at_depth,
+                self.total_iterations_at_depth,
+                self.depth,
+                self.total_iterations,
+                self.depth_tracker.progress_frac() * 100.0
+            )
         }
     }
 }
