@@ -1,6 +1,7 @@
 use crate::solution::StructSolution;
 use clap::Parser;
 use clap::Subcommand;
+use color_eyre::eyre::{Result, eyre};
 
 pub const BANNER: &str = r#"
 ╭━━╮╱╱╱╱╱╱╭━━┳╮╱╱╭┳━╮╭━╮╱╱╭╮╱╱╱╱╱╱╱╱╭╮╱╱╱╭━╮╭━╮╱╱╭╮
@@ -47,6 +48,30 @@ pub enum Commands {
         part_2: bool,
         other_args: Vec<String>,
     },
+}
+
+pub fn split_options(opts: Vec<String>) -> Result<Vec<(String, String)>> {
+    let mut it = opts.iter();
+    let mut arg_pairs = Vec::new();
+    loop {
+        match it.next() {
+            Some(full_arg) => {
+                if full_arg.starts_with("--X") {
+                    let x = &full_arg[3..];
+                    if x.contains("=") {
+                        let (a, v) = x.split_once("=").unwrap();
+                        arg_pairs.push((a.to_string(),v.to_string()));
+                    } else {
+                        arg_pairs.push((x.to_string(), it.next().unwrap().to_string()));
+                    }
+                } else {
+                    return Err(eyre!("All day-specific options should start with '--X'"));
+                }
+            },
+            None => { break }
+        }
+    }
+    Ok(arg_pairs)
 }
 
 // pub fn make_solution<T, U, V>(day: u8) -> StructSolution<T, U, V> {

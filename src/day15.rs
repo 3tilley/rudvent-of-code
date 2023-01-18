@@ -1,4 +1,4 @@
-use crate::solution::{Example, StructSolution};
+use crate::solution::{DayArguments, Example, StructSolution};
 use crate::stack_analysis::StackInfo;
 use crate::DayData;
 use num::{Integer, ToPrimitive};
@@ -9,7 +9,33 @@ type Input1 = Cave;
 type Output1 = usize;
 type Input2 = Cave;
 type Output2 = usize;
-type ExampleParam = i32;
+type Args = DayArgs;
+
+pub struct DayArgs {
+    is_example: bool,
+    part_1_examples: (i32, i32),
+    part_2_examples: (i32, i32),
+}
+
+impl DayArgs {
+    pub fn new() -> DayArgs {
+        DayArgs { is_example: false, part_1_examples: (10, 2_000_000), part_2_examples: (20, 4_000_000) }
+    }
+
+    pub fn part_1_parameter(&self) -> i32 {
+        if self.is_example {self.part_1_examples.0} else {self.part_1_examples.1}
+    }
+
+    pub fn part_2_parameter(&self) -> i32 {
+        if self.is_example {self.part_2_examples.0} else {self.part_2_examples.1}
+    }
+}
+
+impl DayArguments for DayArgs {
+    fn set_is_example(&mut self, is_example: bool) {
+        self.is_example = is_example
+    }
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Sensor {
@@ -226,10 +252,10 @@ pub fn prepare(input: String) -> Input1 {
     input.parse().unwrap()
 }
 
-pub fn part_1(mut input: Input1, run_parameter: &ExampleParam, ex_info: &mut StackInfo) -> Output1 {
+pub fn part_1(mut input: Input1, day_args: &Args, ex_info: &mut StackInfo) -> Output1 {
     println!("x_max: {:?}, y_max: {:?}", input.x_max, input.y_max);
     // This won't work if the offset is negative
-    let t_y = input.convert(0, *run_parameter).1;
+    let t_y = input.convert(0, day_args.part_1_parameter()).1;
     let mut row = vec![Square::Unknown; input.x_max];
     for &((s_x, s_y), (b_x, b_y), man) in &input.beacon_list {
         if s_y == t_y {
@@ -315,10 +341,11 @@ fn calculate_by_sector(
     res
 }
 
-pub fn part_2(input: Input2, run_parameter: &ExampleParam, ex_info: &mut StackInfo) -> Output2 {
+pub fn part_2(input: Input2, day_args: &Args, ex_info: &mut StackInfo) -> Output2 {
+    let run_parameter = day_args.part_2_parameter();
     // This won't work if the offset is negative
     let (x_min, y_min) = input.convert(0, 0);
-    let (x_min, y_min) = input.convert(*run_parameter, *run_parameter);
+    let (x_min, y_min) = input.convert(run_parameter, run_parameter);
 
     let beacon_list = {
         let mut b: Vec<((i32, i32), (i32, i32), usize)> = input
@@ -344,11 +371,11 @@ pub fn part_2(input: Input2, run_parameter: &ExampleParam, ex_info: &mut StackIn
         })
         .collect::<Vec<_>>();
 
-    let split_factor: usize = if *run_parameter > 100 { 5 } else { 2 };
-    let threshold: usize = if *run_parameter > 100 { 20 } else { 4 };
+    let split_factor: usize = if run_parameter > 100 { 5 } else { 2 };
+    let threshold: usize = if run_parameter > 100 { 20 } else { 4 };
     let res = calculate_by_sector(
         (0, 0),
-        (*run_parameter, *run_parameter),
+        (run_parameter, run_parameter),
         &sensors,
         threshold,
         split_factor,
@@ -450,7 +477,7 @@ pub fn part_2(input: Input2, run_parameter: &ExampleParam, ex_info: &mut StackIn
     ((4_000_000 * (x as usize)) + (y as usize))
 }
 
-pub fn make_sol() -> StructSolution<Input1, Output1, Input2, Output2, ExampleParam, ExampleParam> {
+pub fn make_sol(runtime_args: Vec<(String, String)>) -> StructSolution<Input1, Output1, Input2, Output2, Args> {
     let struct_solution = StructSolution {
         prepare_part_1: prepare,
         calc_part_1: part_1,
@@ -458,8 +485,7 @@ pub fn make_sol() -> StructSolution<Input1, Output1, Input2, Output2, ExamplePar
         calc_part_2: part_2,
         example_part_1: Example::Value(26),
         example_part_2: Example::Value(56_000_011),
-        example_1_run_parameter: (10, 2_000_000),
-        example_2_run_parameter: (20, 4_000_000),
+        day_args: DayArgs::new(),
         day_data: DayData::new(15, false),
     };
     struct_solution

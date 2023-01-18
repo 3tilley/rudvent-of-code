@@ -9,8 +9,8 @@ use scraper::{ElementRef, Html, Selector};
 use std::fmt::{Debug, Display};
 use std::thread;
 
-use crate::cli::BANNER;
-use crate::solution::StructSolution;
+use crate::cli::{BANNER, split_options};
+use crate::solution::{DayArguments, StructSolution};
 use cli::{Cli, Commands};
 use types::Output;
 
@@ -79,11 +79,12 @@ fn inner_main() -> Result<()> {
                  other_args,
              }) => {
             println!("Found these other args: {:?}", other_args);
+            let paired_args = split_options(other_args).unwrap();
             println!("Running day {}", day);
-            let sol = day16::make_sol();
+            let mut sol = day16::make_sol(paired_args);
             if !part_2 {
                 if example {
-                    let cont = check_example_and_continue(&sol, !part_2);
+                    let cont = check_example_and_continue(&mut sol, !part_2);
                     if !cont {
                         return Ok(());
                     }
@@ -112,7 +113,7 @@ fn inner_main() -> Result<()> {
                 Ok(())
             } else {
                 if example {
-                    let cont = check_example_and_continue(&sol, !part_2);
+                    let cont = check_example_and_continue(&mut sol, !part_2);
                     if !cont {
                         return Ok(());
                     }
@@ -155,8 +156,8 @@ fn main() -> Result<()> {
     child.join().unwrap()
 }
 
-fn check_example_and_continue<T, U: Output, V, W: Output, X, Y>(
-    sol: &StructSolution<T, U, V, W, X, Y>,
+fn check_example_and_continue<T, U: Output, V, W: Output, X: DayArguments>(
+    sol: &mut StructSolution<T, U, V, W, X>,
     part_1: bool,
 ) -> bool {
     let suffix = if part_1 { "1" } else { "2" };

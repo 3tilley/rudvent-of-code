@@ -1,4 +1,4 @@
-use crate::solution::{Example, StructSolution};
+use crate::solution::{DayArguments, Example, StructSolution};
 use crate::stack_analysis::{Every, StackInfo};
 use crate::DayData;
 use regex::Regex;
@@ -10,11 +10,33 @@ type Input1 = TunnelMap;
 type Output1 = usize;
 type Input2 = TunnelMap;
 type Output2 = usize;
-type ExampleParam = ();
+type Args = DayArgs;
 
 type ValveId = String;
 
-const MAX_MOVES: usize = 30;
+#[derive(Debug, Clone)]
+pub struct DayArgs {
+    moves: usize,
+}
+
+impl DayArgs {
+    pub fn from_vec(mut vec: Vec<(String, String)>) -> DayArgs {
+        let moves = match vec.iter().position(|(k, v)| {k == "moves"}) {
+            None => 30,
+            Some(i) => {
+                let val = vec.remove(i);
+                val.1.parse().unwrap()
+            },
+        };
+        if vec.len() > 0 {
+            panic!("Unrecognised elements in vec initialiser")
+        } else {
+            DayArgs{ moves }
+        }
+    }
+}
+
+impl DayArguments for DayArgs {}
 
 #[derive(Debug, Clone)]
 pub struct Valve {
@@ -162,22 +184,23 @@ impl TunnelState {
             .iter()
             .filter_map(|(k, v)| if v.flowing | (k == valve_id) { Some(k.clone()) } else { None })
             .collect::<String>();
-        let can_open = match self.most_flows.get_mut(&*open_states) {
-            None => {
-                self.most_flows
-                    .insert(open_states, (iteration, current_flow));
-                true
-            }
-            Some((best_iteration, best_flow)) => {
-                if (iteration >= *best_iteration) & (current_flow <= *best_flow) {
-                    false
-                } else {
-                    self.most_flows
-                        .insert(open_states, (iteration, current_flow));
-                    true
-                }
-            }
-        };
+        // let can_open = match self.most_flows.get_mut(&*open_states) {
+        //     None => {
+        //         self.most_flows
+        //             .insert(open_states, (iteration, current_flow));
+        //         true
+        //     }
+        //     Some((best_iteration, best_flow)) => {
+        //         if (iteration >= *best_iteration) & (current_flow <= *best_flow) {
+        //             false
+        //         } else {
+        //             self.most_flows
+        //                 .insert(open_states, (iteration, current_flow));
+        //             true
+        //         }
+        //     }
+        // };
+        let can_open = true;
         let mut valve = self.state.get_mut(valve_id).unwrap();
         if valve.flowing {
             panic!("Tried to open an open valve");
@@ -346,16 +369,17 @@ pub fn inner(
     total_flow: usize,
     current_flow: usize,
     current_step: usize,
+    max_steps: usize,
     current_iteration: usize,
     ex_info: &mut StackInfo,
 ) -> Option<usize> {
-    if current_step > MAX_MOVES {
+    if current_step > max_steps {
         panic!("Too many steps taken");
     }
-    if current_step == MAX_MOVES {
+    if current_step == max_steps {
         return Some(total_flow + current_flow);
     } else if tunnel_state.all_open() {
-        return Some(total_flow + (MAX_MOVES + 1 - current_step) * current_flow);
+        return Some(total_flow + (max_steps + 1 - current_step) * current_flow);
     }
 
     ex_info.show_depth(Some(Every::Count { count: 100 }));
@@ -372,7 +396,7 @@ pub fn inner(
                     .travel_times
                     .get(&(k.to_string(), current.id.to_string()))
                     .unwrap() as usize;
-                if d < MAX_MOVES - current_step {
+                if d < max_steps - current_step {
                     Some((key.clone(), d))
                 } else {
                     None
@@ -401,6 +425,7 @@ pub fn inner(
                         total_flow + ((d + 1) * current_flow),
                         current_flow + new_valve.flow,
                         new_current_step,
+                        max_steps,
                         current_iteration + 1,
                         ex_info,
                     );
@@ -415,17 +440,17 @@ pub fn inner(
         .max()
 }
 
-pub fn part_1(mut input: Input1, run_parameter: &ExampleParam, ex_info: &mut StackInfo) -> Output1 {
+pub fn part_1(mut input: Input1, day_args: &Args, ex_info: &mut StackInfo) -> Output1 {
     let mut start = input.valves.get("AA").unwrap().clone();
     let mut state = TunnelState::new(&input);
-    inner(&input, &mut state, &mut start, 0, 0, 1, 1, ex_info).unwrap()
+    inner(&input, &mut state, &mut start, 0, 0, 1, day_args.moves, 1, ex_info).unwrap()
 }
 
-pub fn part_2(mut input: Input1, run_parameter: &ExampleParam, ex_info: &mut StackInfo) -> Output1 {
+pub fn part_2(mut input: Input1, day_args: &Args, ex_info: &mut StackInfo) -> Output1 {
     todo!("Implement part 2")
 }
 
-pub fn make_sol() -> StructSolution<Input1, Output1, Input2, Output2, ExampleParam, ExampleParam> {
+pub fn make_sol(runtime_args: Vec<(String, String)>) -> StructSolution<Input1, Output1, Input2, Output2, Args> {
     let struct_solution = StructSolution {
         prepare_part_1: prepare,
         calc_part_1: part_1,
@@ -433,8 +458,7 @@ pub fn make_sol() -> StructSolution<Input1, Output1, Input2, Output2, ExamplePar
         calc_part_2: part_2,
         example_part_1: Example::Value(1651),
         example_part_2: Example::Value(0),
-        example_1_run_parameter: ((), ()),
-        example_2_run_parameter: ((), ()),
+        day_args: Args::from_vec(runtime_args),
         day_data: DayData::new(16, false),
     };
     struct_solution
