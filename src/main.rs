@@ -76,7 +76,9 @@ fn inner_main() -> Result<()> {
             day,
             example,
             part_2,
-        }) => {
+                 other_args,
+             }) => {
+            println!("Found these other args: {:?}", other_args);
             println!("Running day {}", day);
             let sol = day16::make_sol();
             if !part_2 {

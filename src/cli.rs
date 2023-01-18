@@ -38,12 +38,14 @@ pub enum Commands {
         #[arg(short, long)]
         part_2: bool,
     },
+    #[clap(trailing_var_arg=true, allow_hyphen_values = true)]
     Run {
         day: u8,
         #[arg(short, long)]
         example: bool,
         #[arg(short, long)]
         part_2: bool,
+        other_args: Vec<String>,
     },
 }
 
