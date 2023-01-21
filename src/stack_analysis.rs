@@ -248,7 +248,6 @@ impl StackInfo {
             }
         };
         if print {
-            println!("{:?}", self.depth_tracker.depth_counts);
             println!(
                 "{} of {} iterations and depth {}\n{} iterations in total\nEst {:.2}% complete",
                 self.iteration_at_depth,

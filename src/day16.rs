@@ -67,6 +67,7 @@ pub struct ValveState {
     flowing: bool,
     // Record what the flow was the last time this node was visited
     visited_at_flow: Option<usize>,
+    visitor_en_route: bool,
 }
 
 impl ValveState {
@@ -74,6 +75,7 @@ impl ValveState {
         ValveState {
             flowing: false,
             visited_at_flow: None,
+            visitor_en_route: false,
         }
     }
 }
@@ -176,7 +178,7 @@ impl TunnelState {
         Some(old)
     }
 
-    /// Returns success if the operation was applied. Not state change for false
+    /// Returns success if the operation was applied. No state change for false
     pub fn open(&mut self, valve_id: &ValveId, iteration: usize, current_flow: usize) -> bool {
         // println!("Opening {}", valve_id);
         let open_states = self
@@ -191,7 +193,7 @@ impl TunnelState {
         //         true
         //     }
         //     Some((best_iteration, best_flow)) => {
-        //         if (iteration >= *best_iteration) & (current_flow <= *best_flow) {
+        //         if (iteration >= *best_iteration) & (current_flow < *best_flow) {
         //             false
         //         } else {
         //             self.most_flows
@@ -200,7 +202,7 @@ impl TunnelState {
         //         }
         //     }
         // };
-        let can_open = true;
+        let can_open= true;
         let mut valve = self.state.get_mut(valve_id).unwrap();
         if valve.flowing {
             panic!("Tried to open an open valve");
@@ -227,6 +229,7 @@ impl TunnelState {
         *valve = ValveState {
             flowing: valve.flowing,
             visited_at_flow: old_visit,
+            visitor_en_route: valve.visitor_en_route,
         };
     }
 
@@ -245,6 +248,21 @@ impl TunnelState {
 
     pub fn all_open(&self) -> bool {
         (self.num_open + self.zero_flows) == self.num
+    }
+
+    pub fn options(&self) -> impl Iter<Item = ValveId> {
+        self.state.iter().filter_map(|(key, val)| {
+            if val.visitor_en_route | val.flowing {
+                None
+            } else {
+                Some(key)
+            }
+        })
+    }
+
+    pub fn switch_en_route(&mut self, valve_id: &ValveId) {
+        let mut state = self.state.get_mut(valve_id).unwrap();
+        state.visitor_en_route = !state.visitor_en_route;
     }
 }
 
@@ -287,102 +305,126 @@ pub fn prepare(input: String) -> Input1 {
     TunnelMap::from_str(&*input).unwrap()
 }
 
-// Previous attempt at solution, just using random walks and seeing where things ended up
-pub fn old_inner(
-    tunnel: &TunnelMap,
-    tunnel_state: &mut TunnelState,
-    current: &Valve,
+
+pub struct FlowTracker {
     total_flow: usize,
     current_flow: usize,
+    current_step: usize,
+    max_steps: usize,
     current_iteration: usize,
-    ex_info: &mut StackInfo,
-) -> Option<usize> {
-    if current_iteration == 30 {
-        return Some(total_flow + current_flow);
-    } else if tunnel_state.all_open() {
-        return Some(total_flow + (31 - current_iteration) * current_flow);
+}
+
+impl FlowTracker {
+    pub fn new(max_steps: usize) -> FlowTracker {
+        FlowTracker {
+            total_flow: 0,
+            current_flow: 0,
+            current_step: 1,
+            max_steps,
+            current_iteration: 1,
+        }
+    }
+    pub fn next_move(&self, added_flow: usize, steps: usize) -> FlowTracker {
+        FlowTracker {
+            total_flow: self.total_flow + (steps * self.current_flow),
+            current_flow: self.current_flow + added_flow,
+            current_step: self.current_step + steps,
+            max_steps: self.max_steps,
+            current_iteration: self.current_iteration + 1,
+        }
     }
 
-    ex_info.show_depth(Some(Every::Count { count: 100_000 }));
-    // println!("{}", tunnel.show_state());
+    pub fn finish(&self) -> usize {
+        self.total_flow + self.steps_left() * self.current_flow
+    }
 
-    let current_state = tunnel_state.state[&current.id];
-    let include_open = !current_state.flowing & (current.flow > 0);
-    let options = current.options(include_open);
-    let opts_len = options.size_hint().1.unwrap();
-    // println!("Number of options: {}", opts_len);
-    options
-        .enumerate()
-        .filter_map(|(i, a)| {
-            ex_info.update_depth_iterations(current_iteration, i + 1, opts_len);
-            match a {
-                Action::Move { to } => {
-                    let old = tunnel_state.update_visit(&to, current_flow);
-                    // let old_state = ValveState { open: tunnel.is_open(&to), visited_at_flow: old };
-                    match old {
-                        None => None,
-                        Some(opt_flow) => {
-                            let mut new_valve = tunnel.valves.get(&*to).unwrap();
-                            let res = old_inner(
-                                tunnel,
-                                tunnel_state,
-                                new_valve,
-                                total_flow + current_flow,
-                                current_flow,
-                                current_iteration + 1,
-                                ex_info,
-                            );
-                            tunnel_state.restore(&to, opt_flow);
-                            res
-                        }
-                    }
-                }
-                Action::Open => {
-                    match tunnel_state.open(&current.id, current_iteration, current_flow) {
-                        true => {
-                            let res = old_inner(
-                                tunnel,
-                                tunnel_state,
-                                current,
-                                total_flow + current_flow,
-                                current_flow + current.flow,
-                                current_iteration + 1,
-                                ex_info,
-                            );
-                            tunnel_state.close(&current.id);
-                            res
-                        }
-                        false => {
-                            None
-                        }
-                    }
-                }
+    pub fn steps_left(&self) -> usize {
+        (self.max_steps + 1) - self.current_step
+    }
+}
+
+pub struct MoverState<'a> {
+    to_state: &'a Valve,
+    moves_left: usize,
+}
+
+impl MoverState {
+    pub fn new<'a>(to_state: &Valve, moves_left: usize) -> MoverState<'a> {
+        MoverState{ to_state, moves_left }
+    }
+
+    pub fn tick(&mut self) -> Option<usize> {
+        match self.moves_left {
+            0 => Some(self.to_state.flow),
+            x => {
+                self.moves_left -= 1;
+                None
             }
-        })
-        .max()
+        }
+    }
+}
+
+pub fn inner_2(
+    tunnel: &TunnelMap,
+    tunnel_state: &mut TunnelState,
+    mover_states: Vec<MoverState>,
+    flow: FlowTracker,
+    ex_info: &mut StackInfo,
+) -> Option<usize> {
+    if flow.current_step > flow.max_steps {
+        panic!("Too many steps taken");
+    }
+    if flow.current_step == flow.max_steps {
+        // println!("Last step - we're done");
+        return Some(flow.total_flow + flow.current_flow);
+    } else if tunnel_state.all_open() {
+        // println!("Everything is open - we're done");
+        return Some(flow.finish());
+    } else {
+        // println!("{} steps left!", steps_left);
+    }
+
+    let dests = tunnel_state.options();
+
+    for mut mover_state in mover_states {
+        if let Some(x) = mover_state.tick() {
+            let new_flow = flow.next_move(x, 1 );
+            dests.filter_map(|valve_id| {
+                match tunnel_state.open(valve_id, new_flow.current_step, new_flow.current_flow) {
+                    true => {
+                        let res = inner_2(tunnel, tunnel_state, mover_states, new_flow, ex_info);
+                        tunnel_state.close(valve_id);
+                        res
+                    }
+                    false => None
+                }
+            })
+        }
+    }.max().or(Some(flow.total_flow + (flow.steps_left() * flow.current_flow)))
 }
 
 pub fn inner(
     tunnel: &TunnelMap,
     tunnel_state: &mut TunnelState,
     current: &Valve,
-    total_flow: usize,
-    current_flow: usize,
-    current_step: usize,
-    max_steps: usize,
-    current_iteration: usize,
+    flow: FlowTracker,
     ex_info: &mut StackInfo,
 ) -> Option<usize> {
-    if current_step > max_steps {
+    // println!("Current step: {}. At {}", current_step, current.id);
+    if flow.current_step > flow.max_steps {
         panic!("Too many steps taken");
     }
-    if current_step == max_steps {
-        return Some(total_flow + current_flow);
+    if flow.current_step == flow.max_steps {
+        // println!("Last step - we're done");
+        return Some(flow.total_flow + flow.current_flow);
     } else if tunnel_state.all_open() {
-        return Some(total_flow + (max_steps + 1 - current_step) * current_flow);
+        // println!("Everything is open - we're done");
+        return Some(flow.finish());
+    } else {
+        // println!("{} steps left!", steps_left);
     }
 
-    ex_info.show_depth(Some(Every::Count { count: 100 }));
+    ex_info.show_depth(Some(Every::Count { count: 10000 }));
     // println!("{}", tunnel_state.show_state());
 
     let current_state = tunnel_state.state[&current.id];
@@ -390,20 +432,24 @@ pub fn inner(
         .state
         .iter()
         .filter_map(|(k, v)| {
-            if (tunnel.valves[k].flow != 0) & (k != &current.id) & !v.flowing {
+            let res = if (tunnel.valves[k].flow != 0) & (k != &current.id) & !v.flowing {
                 let key = k.to_string();
                 let d = *tunnel
                     .travel_times
                     .get(&(k.to_string(), current.id.to_string()))
                     .unwrap() as usize;
-                if d < max_steps - current_step {
-                    Some((key.clone(), d))
+                // Plus one here to account for the time taken to open the valve
+                // println!("Would take {} steps to get to and open {}. {} steps left", d+1, k, steps_left);
+                if (d + 1) < flow.steps_left() {
+                    Some((key.clone(), d+1))
                 } else {
                     None
                 }
             } else {
                 None
-            }
+            };
+            // println!("Considering {}. Result: {:?}", k, res);
+            res
         })
         .collect();
     let opts_len = options.len();
@@ -412,21 +458,20 @@ pub fn inner(
         .iter()
         .enumerate()
         .filter_map(|(i, (v, d))| {
-            ex_info.update_depth_iterations(current_iteration, i + 1, opts_len);
+            ex_info.update_depth_iterations(flow.current_iteration, i + 1, opts_len);
             let new_valve = tunnel.valves.get(v).unwrap();
             // The amount of steps we've already had plus the time to get to new valve plus opening
-            let new_current_step = current_step + d + 1;
-            match tunnel_state.open(v, new_current_step, current_flow + new_valve.flow) {
+            let new_current_step = flow.current_step + d;
+            match tunnel_state.open(v, new_current_step, flow.current_flow + new_valve.flow) {
                 true => {
                     let res = inner(
                         tunnel,
                         tunnel_state,
                         new_valve,
-                        total_flow + ((d + 1) * current_flow),
-                        current_flow + new_valve.flow,
-                        new_current_step,
-                        max_steps,
-                        current_iteration + 1,
+                        flow.next_move(
+                            new_valve.flow,
+                            *d
+                        ),
                         ex_info,
                     );
                     tunnel_state.close(v);
@@ -437,13 +482,14 @@ pub fn inner(
                 }
             }
         })
-        .max()
+        .max().or(Some(flow.total_flow + (flow.steps_left() * flow.current_flow)))
 }
 
 pub fn part_1(mut input: Input1, day_args: &Args, ex_info: &mut StackInfo) -> Output1 {
     let mut start = input.valves.get("AA").unwrap().clone();
     let mut state = TunnelState::new(&input);
-    inner(&input, &mut state, &mut start, 0, 0, 1, day_args.moves, 1, ex_info).unwrap()
+    let flow = FlowTracker::new(day_args.moves);
+    inner(&input, &mut state, &mut start, flow, ex_info).unwrap()
 }
 
 pub fn part_2(mut input: Input1, day_args: &Args, ex_info: &mut StackInfo) -> Output1 {
