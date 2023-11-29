@@ -1,0 +1,18 @@
+[package]
+name = "rudvent-poem"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+poem = "1.3.55"
+shuttle-poem = "0.34.0"
+shuttle-runtime = "0.34.0"
+shuttle-secrets = "0.34.0"
+tokio = "1.28.2"
+tracing = "0.1.40"
+rudvent-lib = { path = "../rudvent-lib" }
+poem-openapi = { version = "3.0.6", features = ["chrono", "rapidoc", "redoc", "swagger-ui"] }
+
+[[bin]]
+name = "shuttle"
+path = "src/bin/shuttle.rs"
