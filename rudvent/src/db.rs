@@ -2,6 +2,8 @@ use chrono::{DateTime, Utc};
 
 use rudvent_lib::{AdventSolution, AdventSolutionWithMetadata, CodeSource, ExecutionClaim, MachineInfo, SolutionLanguage, User};
 
+#[derive(Debug, ormx::Table)]
+#[ormx(table = "solutions", id = id, insertable, deletable)]
 pub struct PgAdventSolution {
     pub id: i64,
     pub user_id: i64,

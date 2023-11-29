@@ -11,7 +11,7 @@
 
 -- Constraints that are likely to be changed later are name
 create table if not exists solutions (
-    id int8 primary key not null,
+    id serial primary key not null,
     user_id int8,
     created timestamptz not null,
     -- This could be an 1 byte instead of a 2 byte integer, but that's treated as a char
