@@ -1,4 +1,3 @@
-use crate::solution::StructSolution;
 use clap::Parser;
 use clap::Subcommand;
 use color_eyre::eyre::{Result, eyre};

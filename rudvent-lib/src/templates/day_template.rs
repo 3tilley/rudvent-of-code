@@ -1,6 +1,5 @@
-use crate::solution::{Example, StructSolution};
-use crate::stack_analysis::StackInfo;
-use crate::DayData;
+use rudvent_lib::runner::{Monitor, StructSolution};
+use rudvent_lib::runner::Monitor;
 
 type Input1 = Vec<u64>;
 type Output1 = usize;
@@ -15,11 +14,11 @@ pub fn prepare(input: String) -> Input1 {
     vec![1, 2, 3]
 }
 
-pub fn part_1(mut input: Input1, run_parameter: &ExampleParam) -> Output1 {
+pub fn part_1(mut input: Input1, run_parameter: &ExampleParam, monitor: &mut Monitor) -> Output1 {
     todo!("Implement part 1")
 }
 
-pub fn part_2(mut input: Input1, run_parameter: &ExampleParam) -> Output1 {
+pub fn part_2(mut input: Input1, run_parameter: &ExampleParam, monitor: &mut Monitor) -> Output1 {
     todo!("Implement part 2")
 }
 

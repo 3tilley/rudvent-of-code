@@ -1,9 +1,10 @@
-mod cli;
-mod types;
+pub mod cli;
+pub mod types;
 mod advent_interactions;
-mod runner;
+pub mod runner;
 mod templates;
 mod tracing;
+pub mod solution;
 
 use std::fmt::Display;
 use std::str::FromStr;

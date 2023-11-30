@@ -6,8 +6,13 @@ use crate::advent_interactions::DayData;
 use crate::types::Output;
 
 /// This currently does nothing, but is here to allow for future expansion
-type Monitor = ();
+pub struct Monitor {}
 
+impl Monitor {
+    pub fn new() -> Monitor {
+        Monitor {}
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum Example<T> {
@@ -118,83 +123,3 @@ impl DayArguments for DummyArgs {
     }
 }
 
-pub struct StructSolution<T, U, V, W, X> {
-    pub prepare_part_1: fn(String) -> T,
-    pub calc_part_1: fn(T, &X, &mut Monitor) -> U,
-    pub prepare_part_2: fn(String) -> V,
-    pub calc_part_2: fn(V, &X, &mut Monitor) -> W,
-    pub example_part_1: Example<U>,
-    pub example_part_2: Example<W>,
-    pub day_args: X,
-    pub day_data: DayData,
-}
-
-// U is is the result of part 1, W is the result of part 2. X is to differentiate between the
-// example and the main run if required
-impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> {
-    pub fn check_example_1(&mut self) -> Execution<U> {
-        self.day_args.set_is_example(true);
-        let prep_start = Utc::now();
-        let mut stack_info = Monitor::new();
-        let input = (self.prepare_part_1)(self.day_data.example_1());
-        let run_start = Utc::now();
-        let ans = (self.calc_part_1)(input, &self.day_args, &mut stack_info);
-        let run_end = Utc::now();
-        let example_val: U = self.example_part_1.value();
-        let res = if ans == example_val {
-            Ok(ans)
-        } else {
-            Err(eyre!(
-                "Example 1 failed. Expected: {:?}, got: {:?}",
-                example_val,
-                ans
-            ))
-        };
-        let ex = Execution::new(res, prep_start, run_start, run_end, stack_info);
-        ex
-    }
-
-    pub fn check_example_2(&mut self) -> Execution<W> {
-        self.day_args.set_is_example(true);
-        let prep_start = Utc::now();
-        let mut stack_info = Monitor::new();
-        let input = (self.prepare_part_2)(self.day_data.example_2());
-        let run_start = Utc::now();
-        let ans = (self.calc_part_2)(input, &self.day_args, &mut stack_info);
-        let run_end = Utc::now();
-        let example_val = self.example_part_2.value();
-        let res = if ans == example_val {
-            Ok(ans)
-        } else {
-            Err(eyre!(
-                "Example 2 failed. Expected: {:?}, got: {:?}",
-                example_val,
-                ans
-            ))
-        };
-        let ex = Execution::new(res, prep_start, run_start, run_end, stack_info);
-        ex
-    }
-    pub fn run_part_1(&mut self) -> Execution<U> {
-        self.day_args.set_is_example(false);
-        let prep_start = Utc::now();
-        let mut stack_info = Monitor::new();
-        let input = (self.prepare_part_1)(self.day_data.input_1());
-        let run_start = Utc::now();
-        let ans = (self.calc_part_1)(input, &self.day_args, &mut stack_info);
-        let run_end = Utc::now();
-        let ex = Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
-        ex
-    }
-    pub fn run_part_2(&mut self) -> Execution<W> {
-        self.day_args.set_is_example(false);
-        let prep_start = Utc::now();
-        let mut stack_info = Monitor::new();
-        let input = (self.prepare_part_2)(self.day_data.input_2());
-        let run_start = Utc::now();
-        let ans = (self.calc_part_2)(input, &self.day_args, &mut stack_info);
-        let run_end = Utc::now();
-        let ex = Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
-        ex
-    }
-}

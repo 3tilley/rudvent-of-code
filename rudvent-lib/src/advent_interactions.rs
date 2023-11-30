@@ -10,6 +10,8 @@ use std::hash::BuildHasherDefault;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
+use tracing::{info, trace, warn, debug};
+
 // const url template
 const DAY_TEMPLATE: &str = "https://adventofcode.com/2022/day/{day}";
 
@@ -110,10 +112,10 @@ impl DayData {
             .data_dir
             .join(format!("day{}_{}.html", self.day, suffix));
         let text = if path.exists() {
-            log::info!("Loading HTML from {}", path.to_string_lossy());
+            info!("Loading HTML from {}", path.to_string_lossy());
             read_as_string(&path).unwrap()
         } else {
-            log::info!("HTML not in cache, fetching");
+            info!("HTML not in cache, fetching");
             let url = day_url(self.day);
             let text = self.client.get(&url).send()?.text()?;
             write_as_string(path, &text, false)?;
@@ -128,7 +130,7 @@ impl DayData {
         for element in html.select(&selector) {
             matching.push(element.inner_html());
         }
-        log::info!("Found {} matching elements", matching.len());
+        info!("Found {} matching elements", matching.len());
         Ok(matching.join("\n"))
     }
 
@@ -242,10 +244,10 @@ impl DayData {
                 .unwrap()
                 .clone();
             if input.attr("value").unwrap() == "1" {
-                log::info!("Part 1 not posted");
+                info!("Part 1 not posted");
                 Ok(false)
             } else {
-                log::info!("Part 1 posted, part 2 has not been posted");
+                info!("Part 1 posted, part 2 has not been posted");
                 Ok(part_1)
             }
         }
@@ -380,7 +382,7 @@ pub fn write_as_string(path: PathBuf, content: &str, dry_run: bool) -> Result<()
         println!("Dry-run enabled, but would be {}", msg);
         Ok(())
     } else {
-        log::trace!("{}", msg);
+        trace!("{}", msg);
         fs::write(&path, content)
             .wrap_err_with(|| format!("Failed to write data to {}", &path.display()))
     }
