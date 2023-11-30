@@ -1,3 +1,11 @@
+mod cli;
+mod types;
+mod advent_interactions;
+mod runner;
+mod templates;
+mod tracing;
+
+use std::fmt::Display;
 use std::str::FromStr;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -71,13 +79,32 @@ pub struct User {
     pub user_name: String,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Display)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SolutionLanguage {
     Python,
     Rust,
     Other(String),
 }
 
+impl Display for SolutionLanguage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SolutionLanguage::Python => write!(f, "Python"),
+            SolutionLanguage::Rust => write!(f, "Rust"),
+            SolutionLanguage::Other(s) => write!(f, "Other({})", s),
+        }
+    }
+}
+
+fn title_case(s: &str) -> String {
+    s.split_whitespace().map(|s| {
+        let mut chars = s.chars();
+        match chars.next() {
+            None => String::new(),
+            Some(f) => f.to_uppercase().chain(chars).collect(),
+        }
+    }).collect::<Vec<String>>().join(" ")
+}
 impl TryFrom<&str> for SolutionLanguage {
     type Error = ();
 
@@ -87,8 +114,11 @@ impl TryFrom<&str> for SolutionLanguage {
             "rust" => Ok(SolutionLanguage::Rust),
             "" => Err(()),
             // TODO: This is really ugly, needs testing, and needs fixing
-            x if x.starts_with("Other(") => Ok(SolutionLanguage::Other(x.replace("Other(", "").replace(")", ""))),
-            _ => Ok(SolutionLanguage::Other(value.to_string())),
+            x if x.starts_with("other(") => {
+                let without_other = x.replace("other(", "").replace(")", "");
+                Ok(SolutionLanguage::Other(title_case(&without_other)))
+            },
+            _ => Ok(SolutionLanguage::Other(title_case(value))),
         }
     }
 }
@@ -191,5 +221,25 @@ mod tests {
     fn test_machine_info() {
         let info = MachineInfo::default();
         println!("{:?}", info );
+    }
+
+    #[test]
+    fn test_solution_language_from_string() {
+        let lang = "python";
+        let actual = SolutionLanguage::try_from(lang);
+        assert_eq!(actual, Ok(SolutionLanguage::Python))
+    }
+
+    #[test]
+    fn test_solution_language_from_other() {
+        let java = SolutionLanguage::Other("Java".to_string());
+        let lang = "Other(Java)";
+        let actual = SolutionLanguage::try_from(lang);
+        let actual_with_other = SolutionLanguage::try_from("Other(Java)");
+        let actual_lowercase = SolutionLanguage::try_from("java");
+        assert_eq!(java.to_string(), lang);
+        assert_eq!(actual, Ok(java.clone()));
+        assert_eq!(actual_with_other, Ok(java.clone()));
+        assert_eq!(actual_lowercase, Ok(java));
     }
 }
