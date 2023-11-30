@@ -1,9 +1,9 @@
 use chrono::{DateTime, Utc};
+use sqlx::FromRow;
 
 use rudvent_lib::{AdventSolution, AdventSolutionWithMetadata, CodeSource, ExecutionClaim, MachineInfo, SolutionLanguage, User};
 
-#[derive(Debug, ormx::Table)]
-#[ormx(table = "solutions", id = id, insertable, deletable)]
+#[derive(Debug, FromRow)]
 pub struct PgAdventSolution {
     pub id: i64,
     pub user_id: i64,
@@ -108,19 +108,31 @@ impl From<AdventSolutionWithMetadata> for PgAdventSolution {
     }
 }
 
+pub async fn insert_advent(conn: impl sqlx::Executor<'_>, advent: PgAdventSolution) {
+    sqlx::query!(
+        "insert into solutions (user_id, year, day)
+        values ($1, $2, $3)")
+        .bind(advent.user_id)
+        .bind(advent.year)
+        .bind(advent.day)
+        .execute(&conn)
+        .await
+
+}
+
 // sqlx tests
 #[cfg(test)]
 mod tests {
     use rudvent_lib::get_solutions;
     use super::*;
 
-    #[sqlx::test]
-    async fn test_get_solutions(pool: sqlx::SqlitePool) {
-        let mut conn = pool.acquire().await?;
-        let solutions = get_solutions();
-        sqlx::query_as()
-        assert_eq!(solutions.len(), 2);
-        assert_eq!(solutions[0].id, 1);
-        assert_eq!(solutions[1].id, 2);
-    }
+    // #[sqlx::test]
+    // async fn test_get_solutions(pool: sqlx::SqlitePool) {
+    //     let mut conn = pool.acquire().await?;
+    //     let solutions = get_solutions();
+    //     sqlx::query_as()
+    //     assert_eq!(solutions.len(), 2);
+    //     assert_eq!(solutions[0].id, 1);
+    //     assert_eq!(solutions[1].id, 2);
+    // }
 }

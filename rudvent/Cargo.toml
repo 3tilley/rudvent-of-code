@@ -13,8 +13,9 @@ tracing = "0.1.40"
 rudvent-lib = { version = "0.1.0", path = "../rudvent-lib" }
 utopia = "0.0.1"
 chrono = { version = "0.4.31", features = ["serde"] }
-sqlx = { version = "0.7.3", features = ["postgres", "sqlite", "runtime-tokio", "runtime-tokio-rustls"] }
-ormx = { version = "0.10.0", features = ["postgres"] }
+sqlx = { version = "0.7.3", features = ["postgres", "sqlite", "runtime-tokio-rustls"] }
+sea-orm = { version = "0.12.7", features = ["runtime-tokio-rustls", "sqlx-postgres", "sqlx-sqlite", "sqlx"] }
+shuttle-shared-db = { version = "0.34.1", features = ["postgres"] }
 
 [[bin]]
 name = "shuttle"
