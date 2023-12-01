@@ -3,7 +3,7 @@ mod db;
 use axum::{extract::State, routing::get, Router, Json};
 use axum::extract::Path;
 use axum::response::IntoResponse;
-use rudvent_lib::get_solutions;
+use rudvent_lib::http::models::get_solutions;
 
 async fn hello_world() -> &'static str {
     "Hello, world!"

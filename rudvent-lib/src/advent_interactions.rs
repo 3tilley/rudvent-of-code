@@ -10,7 +10,7 @@ use std::hash::BuildHasherDefault;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
-use tracing::{info, trace, warn, debug};
+use tracing::{debug, info, trace, warn};
 
 // const url template
 const DAY_TEMPLATE: &str = "https://adventofcode.com/2022/day/{day}";
@@ -25,7 +25,7 @@ pub enum PostError {
     TooHigh,
 }
 
-pub struct DayData {
+pub(crate) struct DayData {
     day: u8,
     data_dir: PathBuf,
     cache: Cache,
@@ -277,7 +277,7 @@ impl DayData {
     }
 }
 
-pub fn process_answer(post_result: String) -> std::result::Result<String, PostError> {
+pub(crate) fn process_answer(post_result: String) -> std::result::Result<String, PostError> {
     let html = Html::parse_document(&post_result);
     let selector = Selector::parse("main article p").unwrap();
     let mut selection = html.select(&selector);
@@ -289,7 +289,7 @@ pub fn process_answer(post_result: String) -> std::result::Result<String, PostEr
     }
 }
 
-pub fn read_file_from_data(name: &str, relative_to: &str) -> String {
+pub(crate) fn read_file_from_data(name: &str, relative_to: &str) -> String {
     let path = Path::new(relative_to);
     let mut relative = path;
     if path.is_file() {
@@ -302,7 +302,7 @@ pub fn read_file_from_data(name: &str, relative_to: &str) -> String {
     data
 }
 
-pub fn ask_bool_input(msg: &str, default: bool) -> bool {
+pub(crate) fn ask_bool_input(msg: &str, default: bool) -> bool {
     let mut answer = String::new();
     let yeses = vec!["yes".to_string(), "y".to_string()];
     let noes = vec!["no".to_string(), "n".to_string()];
@@ -328,7 +328,7 @@ pub fn ask_bool_input(msg: &str, default: bool) -> bool {
     }
 }
 
-pub fn ask_index_input<T: Debug>(
+pub(crate) fn ask_index_input<T: Debug>(
     msg: &str,
     items: &Vec<T>,
     max_attempts: u32,
@@ -365,7 +365,7 @@ pub fn ask_index_input<T: Debug>(
     }
 }
 
-pub fn read_as_string(path: &PathBuf) -> Result<String> {
+pub(crate) fn read_as_string(path: &PathBuf) -> Result<String> {
     fs::read_to_string(&path)
         .wrap_err_with(|| format!("Failed to read data from {}", &path.display()))
 }

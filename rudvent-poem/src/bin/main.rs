@@ -3,7 +3,7 @@ use poem::{listener::TcpListener, EndpointExt, Route, Server, Result};
 use poem_openapi::param::Path;
 use poem_openapi::{payload::PlainText, OpenApi, OpenApiService};
 use poem_openapi::payload::Json;
-use rudvent_lib::AdventSolution;
+use rudvent_lib::http::models::AdventSolution;
 
 struct Api;
 

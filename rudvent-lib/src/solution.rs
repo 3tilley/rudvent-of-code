@@ -1,18 +1,16 @@
-use crate::stack_analysis::StackInfo;
-use crate::{DayData, Output};
+use crate::advent_interactions::DayData;
+use crate::day_data::Monitor;
+use crate::types::Output;
 use chrono::{DateTime, Utc};
 use chrono_humanize::{Accuracy, HumanTime, Tense};
 use color_eyre::eyre::{eyre, Result};
 use std::fmt::Debug;
-use crate::runner::Monitor;
-use crate::types::Output;
 
 #[derive(Debug, Clone)]
 pub enum Example<T> {
     Value(T),
     Regex(String),
 }
-
 
 // #[derive(Debug, Clone, Display)]
 // pub enum PostResult {
@@ -33,7 +31,7 @@ pub struct Execution<T> {
     pub preparation_start: DateTime<Utc>,
     pub run_start: DateTime<Utc>,
     pub run_end: DateTime<Utc>,
-    pub stack_info: StackInfo,
+    pub stack_info: Monitor,
 }
 
 impl<T> Execution<T> {
@@ -42,7 +40,7 @@ impl<T> Execution<T> {
         preparation_start: DateTime<Utc>,
         run_start: DateTime<Utc>,
         run_end: DateTime<Utc>,
-        stack_info: StackInfo,
+        stack_info: Monitor,
     ) -> Execution<T> {
         Execution {
             result,
@@ -66,9 +64,6 @@ impl<T> Execution<T> {
             hc.to_text_en(Accuracy::Precise, Tense::Present),
             calc_frac * 100.0
         );
-        if self.stack_info.total_iterations != 0 {
-            println!("{} iterations recorded", self.stack_info.total_iterations);
-        }
     }
 }
 
@@ -101,16 +96,22 @@ pub trait TraitSolution<T, U, V, W> {
 
 pub trait DayArguments {
     // fn from_vec(extra_args: Vec<(String, String)>) -> T {()}
-    fn set_is_example(&mut self, is_example: bool) {()}
+    fn set_is_example(&mut self, is_example: bool);
+
+    fn from_cli_params(cli_params: Vec<(String, String)>) -> Self;
 }
 
-pub struct DummyArgs {
-
+pub struct BasicRunParams {
+    is_example: bool,
 }
 
-impl DayArguments for DummyArgs {
+impl DayArguments for BasicRunParams {
     fn set_is_example(&mut self, is_example: bool) {
-        ()
+        self.is_example = is_example
+    }
+
+    fn from_cli_params(cli_params: Vec<(String, String)>) -> BasicRunParams {
+        BasicRunParams { is_example: false }
     }
 }
 
@@ -122,13 +123,35 @@ pub struct StructSolution<T, U, V, W, X> {
     pub example_part_1: Example<U>,
     pub example_part_2: Example<W>,
     pub day_args: X,
-    pub day_data: DayData,
+    day_data: DayData,
 }
 
 // U is is the result of part 1, W is the result of part 2. X is to differentiate between the
 // example and the main run if required
-impl<T, U: Output, V, W: Output, X: crate::runner::DayArguments> StructSolution<T, U, V, W, X> {
-    pub fn check_example_1(&mut self) -> crate::runner::Execution<U> {
+impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> {
+    pub fn new(
+        prepare_part_1: fn(String) -> T,
+        calc_part_1: fn(T, &X, &mut Monitor) -> U,
+        prepare_part_2: fn(String) -> V,
+        calc_part_2: fn(V, &X, &mut Monitor) -> W,
+        example_part_1: Example<U>,
+        example_part_2: Example<W>,
+        day: u8
+    ) -> StructSolution<T, U, V, W, X> {
+        let day_args = X::from_cli_params(vec![]);
+        let day_data = DayData::new(day, false);
+        StructSolution {
+            prepare_part_1,
+            calc_part_1,
+            prepare_part_2,
+            calc_part_2,
+            example_part_1,
+            example_part_2,
+            day_args,
+            day_data,
+        }
+    }
+    pub fn check_example_1(&mut self) -> crate::day_data::Execution<U> {
         self.day_args.set_is_example(true);
         let prep_start = Utc::now();
         let mut stack_info = Monitor::new();
@@ -146,11 +169,11 @@ impl<T, U: Output, V, W: Output, X: crate::runner::DayArguments> StructSolution<
                 ans
             ))
         };
-        let ex = crate::runner::Execution::new(res, prep_start, run_start, run_end, stack_info);
+        let ex = crate::day_data::Execution::new(res, prep_start, run_start, run_end, stack_info);
         ex
     }
 
-    pub fn check_example_2(&mut self) -> crate::runner::Execution<W> {
+    pub fn check_example_2(&mut self) -> crate::day_data::Execution<W> {
         self.day_args.set_is_example(true);
         let prep_start = Utc::now();
         let mut stack_info = Monitor::new();
@@ -168,10 +191,10 @@ impl<T, U: Output, V, W: Output, X: crate::runner::DayArguments> StructSolution<
                 ans
             ))
         };
-        let ex = crate::runner::Execution::new(res, prep_start, run_start, run_end, stack_info);
+        let ex = crate::day_data::Execution::new(res, prep_start, run_start, run_end, stack_info);
         ex
     }
-    pub fn run_part_1(&mut self) -> crate::runner::Execution<U> {
+    pub fn run_part_1(&mut self) -> crate::day_data::Execution<U> {
         self.day_args.set_is_example(false);
         let prep_start = Utc::now();
         let mut stack_info = Monitor::new();
@@ -179,10 +202,10 @@ impl<T, U: Output, V, W: Output, X: crate::runner::DayArguments> StructSolution<
         let run_start = Utc::now();
         let ans = (self.calc_part_1)(input, &self.day_args, &mut stack_info);
         let run_end = Utc::now();
-        let ex = crate::runner::Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
+        let ex = crate::day_data::Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
         ex
     }
-    pub fn run_part_2(&mut self) -> crate::runner::Execution<W> {
+    pub fn run_part_2(&mut self) -> crate::day_data::Execution<W> {
         self.day_args.set_is_example(false);
         let prep_start = Utc::now();
         let mut stack_info = Monitor::new();
@@ -190,7 +213,7 @@ impl<T, U: Output, V, W: Output, X: crate::runner::DayArguments> StructSolution<
         let run_start = Utc::now();
         let ans = (self.calc_part_2)(input, &self.day_args, &mut stack_info);
         let run_end = Utc::now();
-        let ex = crate::runner::Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
+        let ex = crate::day_data::Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
         ex
     }
 }

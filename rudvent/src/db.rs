@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 
-use rudvent_lib::{AdventSolution, AdventSolutionWithMetadata, CodeSource, ExecutionClaim, MachineInfo, SolutionLanguage, User};
+use rudvent_lib::http::models::{AdventSolution, AdventSolutionWithMetadata, CodeSource, ExecutionClaim, MachineInfo, SolutionLanguage, User};
 
 #[derive(Debug, FromRow)]
 pub struct PgAdventSolution {
@@ -123,9 +123,6 @@ pub async fn insert_advent(conn: impl sqlx::Executor<'_>, advent: PgAdventSoluti
 // sqlx tests
 #[cfg(test)]
 mod tests {
-    use rudvent_lib::get_solutions;
-    use super::*;
-
     // #[sqlx::test]
     // async fn test_get_solutions(pool: sqlx::SqlitePool) {
     //     let mut conn = pool.acquire().await?;

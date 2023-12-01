@@ -1,13 +1,12 @@
 use clap::Parser;
 use clap::Subcommand;
-use color_eyre::eyre::{Result, eyre};
-
+use color_eyre::eyre::{eyre, Result};
 
 #[derive(Parser)]
-#[command(author, about = "Advent of code runner for Rust", version)]
+#[command(author, about = "Advent of code runner for Rust", version, arg_required_else_help = true)]
 pub struct Cli {
     #[clap(subcommand)]
-    pub subcmd: Option<Commands>,
+    pub sub_cmd: Commands,
 
     #[command(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
@@ -36,7 +35,7 @@ pub enum Commands {
         #[arg(short, long)]
         part_2: bool,
     },
-    #[clap(trailing_var_arg=true, allow_hyphen_values = true)]
+    #[clap(trailing_var_arg = true, allow_hyphen_values = true)]
     Run {
         day: u8,
         #[arg(short, long)]
@@ -57,15 +56,15 @@ pub fn split_options(opts: Vec<String>) -> Result<Vec<(String, String)>> {
                     let x = &full_arg[3..];
                     if x.contains("=") {
                         let (a, v) = x.split_once("=").unwrap();
-                        arg_pairs.push((a.to_string(),v.to_string()));
+                        arg_pairs.push((a.to_string(), v.to_string()));
                     } else {
                         arg_pairs.push((x.to_string(), it.next().unwrap().to_string()));
                     }
                 } else {
                     return Err(eyre!("All day-specific options should start with '--X'"));
                 }
-            },
-            None => { break }
+            }
+            None => break,
         }
     }
     Ok(arg_pairs)

@@ -1,38 +1,53 @@
-use rudvent_lib::runner::{Monitor, StructSolution};
-use rudvent_lib::runner::Monitor;
+use crate::day_data::Monitor;
+use crate::solution::{BasicRunParams, Example, StructSolution};
 
-type Input1 = Vec<u64>;
-type Output1 = usize;
-type Input2 = Vec<u64>;
-type Output2 = usize;
-type ExampleParam = ();
+// Update these types to reflect the types you want to use to solve the problems. These
+// can be simple types (u64), integers, or your own types
+type InputPart1 = Vec<u64>;
+type OutputPart1 = usize;
+type InputPart2 = Vec<u64>;
+type OutputPart2 = usize;
 
-pub fn prepare(input: String) -> Input1 {
+// These constants hold the answer for the examples, they are used to test your code
+const EXAMPLE_1_ANS: OutputPart1 = 0;
+const EXAMPLE_2_ANS: OutputPart2 = 0;
+
+// This currently only the information about whether the run is an example or not. It may be augmented
+type RunParams = BasicRunParams;
+
+// This function is called to prepare the input for part 1
+pub fn prepare(input: String) -> InputPart1 {
     for line in input.lines() {
         todo!()
     }
     vec![1, 2, 3]
 }
 
-pub fn part_1(mut input: Input1, run_parameter: &ExampleParam, monitor: &mut Monitor) -> Output1 {
+// Implement your solution for part 1 here
+pub fn part_1(mut input: InputPart1, run_parameter: &RunParams, monitor: &mut Monitor) -> OutputPart1 {
     todo!("Implement part 1")
 }
 
-pub fn part_2(mut input: Input1, run_parameter: &ExampleParam, monitor: &mut Monitor) -> Output1 {
+// If the puzzle requires a different input for part 2, this function can be updated
+pub fn prepare_2(input: String) -> InputPart2 {prepare(input)}
+
+
+pub fn part_2(mut input: InputPart1, run_parameter: &RunParams, monitor: &mut Monitor) -> OutputPart1 {
     todo!("Implement part 2")
 }
 
-pub fn make_sol() -> StructSolution<Input1, Output1, Input2, Output2, ExampleParam, ExampleParam> {
-    let struct_solution = StructSolution {
-        prepare_part_1: prepare,
-        calc_part_1: part_1,
-        prepare_part_2: prepare,
-        calc_part_2: part_2,
-        example_part_1: Example::Value(0),
-        example_part_2: Example::Value(0),
-        example_1_run_parameter: ((), ()),
-        example_2_run_parameter: ((), ()),
-        day_data: DayData::new(u8::MAX, false),
-    };
-    struct_solution
+// ----- There is no need to change anything below this line -----
+// The below code creates a solution that is generic over several types. These types might change
+// between different days, for example integers on some and strings on others. They are type-aliased
+// above to make it easier to change them all at once
+pub fn make_sol(day: u8) -> StructSolution<InputPart1, OutputPart1, InputPart2, OutputPart2, RunParams> {
+    StructSolution::new(
+        prepare,
+        part_1,
+        prepare_2,
+        part_2,
+        Example::Value(EXAMPLE_1_ANS),
+        Example::Value(EXAMPLE_2_ANS),
+        day
+    )
 }
