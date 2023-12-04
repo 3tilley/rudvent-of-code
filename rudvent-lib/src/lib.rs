@@ -1,10 +1,11 @@
 mod advent_interactions;
 pub mod cli;
 pub mod day_data;
+mod http;
+pub mod runner;
 pub mod solution;
 mod templates;
 mod tracing;
 pub mod types;
-mod http;
 mod utils;
-pub mod runner;
+mod printer;

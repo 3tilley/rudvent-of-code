@@ -73,6 +73,20 @@ impl<T> Execution<T> {
             println!("{} iterations recorded", self.stack_info.total_iterations);
         }
     }
+
+    pub fn into_execution_string(self) -> Execution<String> {
+        let res = match self.result {
+            Ok(r) => Ok(format!("{}", r)),
+            Err(e) => format!("Error: {}", e),
+        };
+        Execution::new(
+            res,
+            self.preparation_start,
+            self.run_start,
+            self.run_end,
+            self.stack_info,
+        )
+    }
 }
 
 pub trait TraitSolution<T, U, V, W> {

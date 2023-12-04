@@ -1,9 +1,20 @@
+pub mod app_builder;
+pub mod app;
+
+pub use app_builder::AppBuilder;
+pub use app::App;
+
 use clap::Parser;
 use clap::Subcommand;
 use color_eyre::eyre::{eyre, Result};
 
-#[derive(Parser)]
-#[command(author, about = "Advent of code runner for Rust", version, arg_required_else_help = true)]
+#[derive(Parser, Debug)]
+#[command(
+    author,
+    about = "Advent of code runner for Rust",
+    version,
+    arg_required_else_help = true
+)]
 pub struct Cli {
     #[clap(subcommand)]
     pub sub_cmd: Commands,
@@ -12,13 +23,15 @@ pub struct Cli {
     verbose: clap_verbosity_flag::Verbosity,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum Commands {
+    /// Create the template for a new day
     New {
         day: u8,
         #[arg(short, long)]
         overwrite: bool,
     },
+    /// Fetch data for a particular day
     Fetch {
         day: u8,
         #[arg(short, long)]
@@ -26,6 +39,7 @@ pub enum Commands {
         #[arg(short, long)]
         dry_run: bool,
     },
+    /// Show the problem description for a particular day
     Desc {
         day: u8,
         #[arg(short, long)]
@@ -35,6 +49,7 @@ pub enum Commands {
         #[arg(short, long)]
         part_2: bool,
     },
+    /// Run the problem code for one of the days
     #[clap(trailing_var_arg = true, allow_hyphen_values = true)]
     Run {
         day: u8,

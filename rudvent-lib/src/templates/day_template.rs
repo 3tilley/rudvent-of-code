@@ -1,5 +1,5 @@
 use crate::day_data::Monitor;
-use crate::solution::{BasicRunParams, Example, StructSolution};
+use crate::solution::{BasicRunParams, Example, Solution, SolutionBuilder, StructSolution, StructSolutionBuilder};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -24,15 +24,24 @@ pub fn prepare(input: String) -> InputPart1 {
 }
 
 // Implement your solution for part 1 here
-pub fn part_1(mut input: InputPart1, run_parameter: &RunParams, monitor: &mut Monitor) -> OutputPart1 {
+pub fn part_1(
+    mut input: InputPart1,
+    run_parameter: &RunParams,
+    monitor: &mut Monitor,
+) -> OutputPart1 {
     todo!("Implement part 1")
 }
 
 // If the puzzle requires a different input for part 2, this function can be updated
-pub fn prepare_2(input: String) -> InputPart2 {prepare(input)}
+pub fn prepare_2(input: String) -> InputPart2 {
+    prepare(input)
+}
 
-
-pub fn part_2(mut input: InputPart1, run_parameter: &RunParams, monitor: &mut Monitor) -> OutputPart1 {
+pub fn part_2(
+    mut input: InputPart1,
+    run_parameter: &RunParams,
+    monitor: &mut Monitor,
+) -> OutputPart1 {
     todo!("Implement part 2")
 }
 
@@ -40,14 +49,13 @@ pub fn part_2(mut input: InputPart1, run_parameter: &RunParams, monitor: &mut Mo
 // The below code creates a solution that is generic over several types. These types might change
 // between different days, for example integers on some and strings on others. They are type-aliased
 // above to make it easier to change them all at once
-pub fn make_sol(day: u8) -> StructSolution<InputPart1, OutputPart1, InputPart2, OutputPart2, RunParams> {
-    StructSolution::new(
+pub fn make_sol() -> StructSolutionBuilder<InputPart1, OutputPart1, InputPart2, OutputPart2, RunParams> {
+    StructSolutionBuilder::new(
         prepare,
         part_1,
         prepare_2,
         part_2,
         Example::Value(EXAMPLE_1_ANS),
         Example::Value(EXAMPLE_2_ANS),
-        day
     )
 }

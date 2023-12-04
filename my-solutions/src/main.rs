@@ -1,5 +1,7 @@
+mod days;
 
-fn main() {
+fn main() -> () {
     println!("Hello, world!");
-    rudvent_lib::runner::run();
+    let app = rudvent_lib::cli::AppBuilder::new(days::DAYS_VEC).with_year(2023).build();
+    app.run()
 }

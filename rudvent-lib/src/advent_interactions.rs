@@ -13,10 +13,10 @@ use std::{env, fs, io};
 use tracing::{debug, info, trace, warn};
 
 // const url template
-const DAY_TEMPLATE: &str = "https://adventofcode.com/2022/day/{day}";
+const DAY_TEMPLATE: &str = "https://adventofcode.com/{year}/day/{day}";
 
-fn day_url(day: u8) -> String {
-    DAY_TEMPLATE.replace("{day}", &day.to_string())
+fn day_url(year: u16, day: u8) -> String {
+    DAY_TEMPLATE.replace("{day}", &day.to_string()).replace("{year}", &year.to_string())
 }
 
 #[derive(Debug, Clone)]
@@ -26,6 +26,7 @@ pub enum PostError {
 }
 
 pub(crate) struct DayData {
+    year: u16,
     day: u8,
     data_dir: PathBuf,
     cache: Cache,
@@ -35,32 +36,20 @@ pub(crate) struct DayData {
 }
 
 impl DayData {
-    pub fn new(day: u8, dry_run: bool) -> Self {
-        let path = PathBuf::from(file!());
-        let mut data_path = path.parent().unwrap().parent().unwrap().to_path_buf();
-        data_path.push("data");
-        data_path.push("html");
-        let mut token_path = PathBuf::from(file!())
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .to_path_buf();
-        token_path.push(".env");
-        token_path.push("session.txt");
-        let auth_token = read_as_string(&token_path).unwrap().trim().to_string();
+    pub fn new(year: u16, day: u8, dry_run: bool, data_directory: PathBuf, auth_token: String) -> Self {
         // It's probably a bit abusive, but I never want to hit the server if I can avoid it
         let ten_years_in_seconds = 10 * 365 * 24 * 60 * 60;
         let client = DayData::make_client_builder(&auth_token).build().unwrap();
         let cache = CacheBuilder::new()
             .client_builder(DayData::make_client_builder(&auth_token))
-            .dir(data_path.clone())
+            .dir(data_directory.join("html"))
             .freshness_lifetime(ten_years_in_seconds)
             .build()
             .unwrap();
         Self {
+            year,
             day,
-            data_dir: data_path,
+            data_dir: data_directory,
             cache,
             dry_run,
             auth_token,
@@ -116,7 +105,7 @@ impl DayData {
             read_as_string(&path).unwrap()
         } else {
             info!("HTML not in cache, fetching");
-            let url = day_url(self.day);
+            let url = day_url(self.year, self.day);
             let text = self.client.get(&url).send()?.text()?;
             write_as_string(path, &text, false)?;
             text
@@ -178,7 +167,7 @@ impl DayData {
             println!("Fetching input data");
             let text = self
                 .client
-                .get(format!("{}/input", day_url(self.day)))
+                .get(format!("{}/input", day_url(self.year, self.day)))
                 .send()
                 .unwrap()
                 .text()?;
@@ -255,7 +244,7 @@ impl DayData {
 
     pub fn post_ans(&self, answer: &str, part_1: bool) -> Result<String> {
         let suffix = if part_1 { "1" } else { "2" };
-        let url = format!("{}/answer", day_url(self.day));
+        let url = format!("{}/answer", day_url(self.year, self.day));
         let resp = self
             .client
             .post(&url)
@@ -266,9 +255,8 @@ impl DayData {
             .send()?;
         let text = resp.text()?;
         println!("Posted answer {}: {:?}", suffix, answer);
-        let mut data_path = self.data_path();
-        data_path.push(format!("day{}_{}_answer.html", self.day, suffix));
-        write_as_string(data_path, &text, self.dry_run)?;
+        let html_file = self.data_dir.join(format!("day{}_{}_answer.html", self.day, suffix));
+        write_as_string(html_file, &text, self.dry_run)?;
         let res = process_answer(text);
         match res {
             Ok(x) => Ok(x),

@@ -1,5 +1,5 @@
-use clap::Parser;
 use crate::cli::{Cli, Commands};
+use clap::Parser;
 
 pub fn run() {
     let args = Cli::parse();

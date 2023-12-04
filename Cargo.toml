@@ -5,6 +5,5 @@ resolver = "2"
 members = [
   "rudvent",
   "rudvent-lib",
-  "rudvent-poem",
   "my-solutions"
 ]

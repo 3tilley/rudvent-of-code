@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
-use strum::{Display, EnumString};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
+use strum::{Display, EnumString};
 use sysinfo::{CpuExt, SystemExt};
 
 pub fn get_solutions() -> Vec<AdventSolutionWithMetadata> {
@@ -127,7 +127,8 @@ pub struct CodeSource {
 
 #[cfg(test)]
 mod tests {
-    use crate::http::models::OS;
+    use std::str::FromStr;
+    use crate::http::models::{MachineInfo, OS, SolutionLanguage};
 
     #[test]
     fn test_os_from_string() {
@@ -191,7 +192,9 @@ impl TryFrom<&str> for SolutionLanguage {
             // TODO: This is really ugly, needs testing, and needs fixing
             x if x.starts_with("other(") => {
                 let without_other = x.replace("other(", "").replace(")", "");
-                Ok(SolutionLanguage::Other(crate::utils::title_case(&without_other)))
+                Ok(SolutionLanguage::Other(crate::utils::title_case(
+                    &without_other,
+                )))
             }
             _ => Ok(SolutionLanguage::Other(crate::utils::title_case(value))),
         }
