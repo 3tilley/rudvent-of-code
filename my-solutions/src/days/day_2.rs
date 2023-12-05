@@ -1,14 +1,14 @@
-use std::cmp::min;
-use std::str::FromStr;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::u64 as nom64;
-use nom::{IResult, Parser};
 use nom::multi::separated_list1;
 use nom::sequence::Tuple;
-use tracing::info;
+use nom::{IResult, Parser};
 use rudvent_lib::day_data::Monitor;
-use rudvent_lib::solution::{RunParams, Example, Solution, SolutionBuilder, StructSolutionBuilder};
+use rudvent_lib::solution::{Example, RunParams, Solution, SolutionBuilder, StructSolutionBuilder};
+use std::cmp::{max, min};
+use std::str::FromStr;
+use tracing::{info, info_span};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -24,17 +24,23 @@ const EXAMPLE_2_ANS: OutputPart2 = 2286;
 // This currently only the information about whether the run is an example or not. It may be augmented
 type UserParams = ();
 
-
 #[derive(Debug)]
 pub struct Game {
-    draws: Vec<Draw>
+    draws: Vec<Draw>,
 }
 
 impl FromStr for Game {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (_, (_, game_id, _, draws)) = ((tag("Game "), nom64, tag(":"), separated_list1(tag(";"), Draw::find_all))).parse(s).unwrap();
+        let (_, (_, game_id, _, draws)) = ((
+            tag("Game "),
+            nom64,
+            tag(":"),
+            separated_list1(tag(";"), Draw::find_all),
+        ))
+            .parse(s)
+            .unwrap();
         Ok(Game { draws })
     }
 }
@@ -48,15 +54,33 @@ struct Draw {
 impl Draw {
     fn find_blue(input: &str) -> IResult<&str, Draw> {
         let (input, (_, count, _)) = ((tag(" "), nom64, tag(" blue"))).parse(input)?;
-        Ok((input, Draw {blue: count, ..Default::default()}))
+        Ok((
+            input,
+            Draw {
+                blue: count,
+                ..Default::default()
+            },
+        ))
     }
     fn find_red(input: &str) -> IResult<&str, Draw> {
         let (input, (_, count, _)) = ((tag(" "), nom64, tag(" red"))).parse(input)?;
-        Ok((input, Draw {red: count, ..Default::default()}))
+        Ok((
+            input,
+            Draw {
+                red: count,
+                ..Default::default()
+            },
+        ))
     }
     fn find_green(input: &str) -> IResult<&str, Draw> {
         let (input, (_, count, _)) = ((tag(" "), nom64, tag(" green"))).parse(input)?;
-        Ok((input, Draw {green: count, ..Default::default()}))
+        Ok((
+            input,
+            Draw {
+                green: count,
+                ..Default::default()
+            },
+        ))
     }
 
     fn combine(left: Draw, right: Draw) -> Draw {
@@ -68,7 +92,11 @@ impl Draw {
     }
 
     fn find_all(input: &str) -> IResult<&str, Draw> {
-        let (input, cols) = separated_list1( tag(","), alt((Draw::find_blue, Draw::find_green, Draw::find_red))).parse(input)?;
+        let (input, cols) = separated_list1(
+            tag(","),
+            alt((Draw::find_blue, Draw::find_green, Draw::find_red)),
+        )
+        .parse(input)?;
         let combined = cols.into_iter().reduce(Draw::combine).unwrap();
         Ok((input, combined))
     }
@@ -78,16 +106,18 @@ impl Draw {
 //
 // }
 
-
 #[derive(Debug, PartialEq)]
 enum Colour {
     Blue,
     Red,
-    Green
+    Green,
 }
 // This function is called to prepare the input for part 1
 pub fn prepare(input: String) -> InputPart1 {
-    input.lines().map(|line| Game::from_str(&line).unwrap()).collect()
+    input
+        .lines()
+        .map(|line| Game::from_str(&line).unwrap())
+        .collect()
 }
 
 // Implement your solution for part 1 here
@@ -99,13 +129,20 @@ pub fn part_1(
     let max_red = 12;
     let max_green = 13;
     let max_blue = 14;
-    input.iter().enumerate().filter_map(|(id, game)| {
-        let invalid = game.draws.iter().any(|draw| draw.green > max_green || draw.red > max_red || draw.blue > max_blue);
-        match invalid {
-            true => None,
-            false => Some(id + 1)
-        }
-    }).sum()
+    input
+        .iter()
+        .enumerate()
+        .filter_map(|(id, game)| {
+            let invalid = game
+                .draws
+                .iter()
+                .any(|draw| draw.green > max_green || draw.red > max_red || draw.blue > max_blue);
+            match invalid {
+                true => None,
+                false => Some(id + 1),
+            }
+        })
+        .sum()
 }
 
 // If the puzzle requires a different input for part 2, this function can be updated
@@ -118,15 +155,39 @@ pub fn part_2(
     run_parameter: &RunParams<UserParams>,
     monitor: &mut Monitor,
 ) -> OutputPart1 {
-    input.iter().map(|game| {
-        let (min_red, min_green, min_blue) = game.draws.iter().map(|draw| (draw.red, draw.green, draw.blue)).max().unwrap();
-        info!("{}, {}, {}", min_red, min_green, min_blue);
-        (min_red * min_green * min_blue) as usize
-        }
-    ).sum()
+    input
+        .iter()
+        .enumerate()
+        .map(|(i, game)| {
+            let span = info_span!("Calculating maximums", game_id = (i + 1).to_string());
+            let _enter = span.enter();
+            let (min_red, min_green, min_blue) = game
+                .draws
+                .iter()
+                .enumerate()
+                .map(|(j, draw)| {
+                    info!(
+                        "Draw: {} Red {},  Green {}, Blue {}",
+                        j + 1,
+                        draw.red,
+                        draw.green,
+                        draw.blue
+                    );
+                    (draw.red, draw.green, draw.blue)
+                })
+                .reduce(|acc, d| (max(acc.0, d.0), max(acc.1, d.1), max(acc.2, d.2)))
+                .unwrap();
+            info!(
+                "Game: {} Red: {}, Green: {}, Blue: {}",
+                i + 1,
+                min_red,
+                min_green,
+                min_blue
+            );
+            (min_red * min_green * min_blue) as usize
+        })
+        .sum()
 }
-
-
 
 // ----- There is no need to change anything below this line -----
 // The below code creates a solution that is generic over several types. These types might change

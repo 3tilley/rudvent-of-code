@@ -1,5 +1,5 @@
 use rudvent_lib::day_data::Monitor;
-use rudvent_lib::solution::{RunParams, Example, Solution, SolutionBuilder, StructSolutionBuilder};
+use rudvent_lib::solution::{Example, RunParams, Solution, SolutionBuilder, StructSolutionBuilder};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -49,7 +49,8 @@ pub fn part_2(
 // The below code creates a solution that is generic over several types. These types might change
 // between different days, for example integers on some and strings on others. They are type-aliased
 // above to make it easier to change them all at once
-pub fn make_old_sol() -> StructSolutionBuilder<InputPart1, OutputPart1, InputPart2, OutputPart2, UserParams> {
+pub fn make_old_sol(
+) -> StructSolutionBuilder<InputPart1, OutputPart1, InputPart2, OutputPart2, UserParams> {
     StructSolutionBuilder::new(
         prepare,
         part_1,

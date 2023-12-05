@@ -1,16 +1,16 @@
 use cached_path::{Cache, CacheBuilder};
 use color_eyre::eyre::{eyre, Result, WrapErr};
 use color_eyre::Report;
+use dialoguer::theme::ColorfulTheme;
+use dialoguer::Confirm;
 use reqwest::blocking::Client;
 use scraper::node::Element;
-use scraper::{ElementRef, Html, Selector};
+use scraper::{Element as OtherElement, ElementRef, Html, Selector};
 use std::convert::TryInto;
 use std::fmt::{format, Debug};
 use std::hash::BuildHasherDefault;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
-use dialoguer::Confirm;
-use dialoguer::theme::ColorfulTheme;
 
 use tracing::{debug, info, trace, warn};
 
@@ -18,7 +18,9 @@ use tracing::{debug, info, trace, warn};
 const DAY_TEMPLATE: &str = "https://adventofcode.com/{year}/day/{day}";
 
 fn day_url(year: u16, day: u8) -> String {
-    DAY_TEMPLATE.replace("{day}", &day.to_string()).replace("{year}", &year.to_string())
+    DAY_TEMPLATE
+        .replace("{day}", &day.to_string())
+        .replace("{year}", &year.to_string())
 }
 
 #[derive(Debug, Clone)]
@@ -38,7 +40,13 @@ pub struct DayData {
 }
 
 impl DayData {
-    pub fn new(year: u16, day: u8, dry_run: bool, data_directory: PathBuf, auth_token: String) -> Self {
+    pub fn new(
+        year: u16,
+        day: u8,
+        dry_run: bool,
+        data_directory: PathBuf,
+        auth_token: String,
+    ) -> Self {
         // It's probably a bit abusive, but I never want to hit the server if I can avoid it
         let ten_years_in_seconds = 10 * 365 * 24 * 60 * 60;
         let client = DayData::make_client_builder(&auth_token).build().unwrap();
@@ -84,12 +92,12 @@ impl DayData {
         self.data_dir.join(format!("day{}_input_1.txt", self.day))
     }
 
-    pub fn html(&self, part_1: bool, all_html: bool) -> Result<String> {
+    pub fn html(&self, part_1: bool, all_html: bool, force_refetch: bool) -> Result<String> {
         let suffix = if part_1 { "1" } else { "2" };
         let path = self
             .data_dir
             .join(format!("day{}_{}.html", self.day, suffix));
-        let text = if path.exists() {
+        let text = if path.exists() && !force_refetch {
             info!("Loading HTML from {}", path.to_string_lossy());
             read_as_string(&path).unwrap()
         } else {
@@ -100,11 +108,17 @@ impl DayData {
                 reqwest::StatusCode::OK => resp.text()?,
                 e => {
                     warn!("Error fetching HTML: {:?}", e);
-                    return Err(eyre!("Error fetching HTML: {:?}. Is your token correct?", e));
+                    return Err(eyre!(
+                        "Error fetching HTML: {:?}. Is your token correct?",
+                        e
+                    ));
                 }
             };
             if self.dry_run {
-                info!("Dry-run enabled, but would be saving HTML to {}", path.to_string_lossy());
+                info!(
+                    "Dry-run enabled, but would be saving HTML to {}",
+                    path.to_string_lossy()
+                );
             } else {
                 write_as_string(path, &text, false)?;
             }
@@ -124,7 +138,7 @@ impl DayData {
     }
 
     pub fn fetch_day_example(&self, part_1: bool) -> Result<()> {
-        let html = self.html(part_1, false)?;
+        let html = self.html(part_1, false, false)?;
         let doc = Html::parse_document(&html);
         let pre_selector = Selector::parse("pre code").unwrap();
         let pres = doc.select(&pre_selector).collect::<Vec<_>>();
@@ -133,7 +147,7 @@ impl DayData {
             0 => Err(eyre!("No obvious example blocks found")),
             1 => {
                 let pre = pres.get(0).unwrap();
-                if !self.dry_run && quiz_to_save(pre)  {
+                if !self.dry_run && quiz_to_save(pre) {
                     write_as_string(self.example_1_path(), &pre.inner_html(), self.dry_run)?;
                 }
                 Ok(())
@@ -209,13 +223,21 @@ impl DayData {
         data.to_string()
     }
 
-    pub fn check_for_posting(&self, part_1: bool) -> Result<bool> {
-        let document = &*self.html(true, true).unwrap();
+    pub fn check_for_posting(&self, part_1: bool) -> Result<Option<String>> {
+        let document = &*self.html(part_1, true, false)?;
         let day = self.day;
-        Self::has_been_posted(part_1, document, day)
+
+        let result = Self::has_been_posted(part_1, document, day);
+        match result {
+            Ok(None) => {
+                let fresh_document = &*self.html(part_1, true, true)?;
+                Self::has_been_posted(part_1, fresh_document, day)
+            }
+            _ => result,
+        }
     }
 
-    fn has_been_posted(part_1: bool, document: &str, day: u8) -> Result<bool, Report> {
+    fn has_been_posted(part_1: bool, document: &str, day: u8) -> Result<Option<String>, Report> {
         let selector = Selector::parse(&*format!(r#"form[action="{}/answer"]"#, day)).unwrap();
         let html = Html::parse_document(document);
         let inputs = html.select(&selector).collect::<Vec<_>>();
@@ -234,10 +256,35 @@ impl DayData {
                 .clone();
             if input.attr("value").unwrap() == "1" {
                 info!("Part 1 not posted");
-                Ok(false)
+                Ok(None)
             } else {
                 info!("Part 1 posted, part 2 has not been posted");
-                Ok(part_1)
+                if !part_1 {
+                    return Ok(None)
+                }
+
+                // We'll use the header to select the right article, and from there get to the <p> below that contains the previous answer
+                let header_selector =
+                    Selector::parse(&*format!(r#"main article.day-desc"#)).unwrap();
+                let articles = html.select(&header_selector).collect::<Vec<_>>();
+                if articles.len() == 1 {
+                    info!("Only part 1 is available, that probably means the part 1 answer hasn't been posted");
+                    Ok(None)
+                } else if articles.len() == 2 {
+                    let puzzle_answer_p = articles[0].next_sibling_element().unwrap();
+                    if puzzle_answer_p
+                        .html()
+                        .contains("Your puzzle answer was")
+                    {
+                        let ans = puzzle_answer_p
+                            .select(&Selector::parse("code").unwrap()).next()
+                            .expect("This should be a <code> block, not found")
+                            .inner_html();
+                        Ok(Some(ans))
+                    } else {
+                        Err(eyre!("Unable to find previous answer"))
+                    }
+                }
             }
         }
     }
@@ -255,7 +302,9 @@ impl DayData {
             .send()?;
         let text = resp.text()?;
         println!("Posted answer {}: {:?}", suffix, answer);
-        let html_file = self.data_dir.join(format!("day{}_{}_answer.html", self.day, suffix));
+        let html_file = self
+            .data_dir
+            .join(format!("day{}_{}_answer.html", self.day, suffix));
         write_as_string(html_file, &text, self.dry_run)?;
         let res = process_answer(text);
         match res {
@@ -280,12 +329,19 @@ impl DayData {
     }
 
     pub fn next_day(&self) -> DayData {
-        DayData::new(self.year, self.day + 1, self.dry_run, self.data_dir.clone(), self.auth_token.clone())
+        DayData::new(
+            self.year,
+            self.day + 1,
+            self.dry_run,
+            self.data_dir.clone(),
+            self.auth_token.clone(),
+        )
     }
 }
 
 pub(crate) fn process_answer(post_result: String) -> std::result::Result<String, PostError> {
     let html = Html::parse_document(&post_result);
+    println!("{}", post_result);
     let selector = Selector::parse("main article p").unwrap();
     let mut selection = html.select(&selector);
     let first_p = selection.next().unwrap();
@@ -310,7 +366,12 @@ pub(crate) fn read_file_from_data(name: &str, relative_to: &str) -> String {
 }
 
 pub(crate) fn ask_bool_input(msg: &str, default: bool) -> bool {
-    Confirm::with_theme(&ColorfulTheme::default()).with_prompt(msg).report(true).default(default).interact().unwrap()
+    Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(msg)
+        .report(true)
+        .default(default)
+        .interact()
+        .unwrap()
 }
 
 pub(crate) fn ask_index_input<T: Debug>(

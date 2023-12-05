@@ -48,7 +48,6 @@ pub struct Execution<T> {
     pub stack_info: Monitor,
 }
 
-
 pub trait DayArguments {
     // fn from_vec(extra_args: Vec<(String, String)>) -> T {()}
     fn set_is_example(&mut self, is_example: bool) {

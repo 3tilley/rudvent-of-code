@@ -1,12 +1,12 @@
-use crate::advent_interactions::DayData;
+use crate::advent_interactions::{ask_bool_input, DayData};
+use crate::cli::App;
 use crate::day_data::Monitor;
+use crate::printer::Printer;
 use crate::types::Output;
 use chrono::{DateTime, Utc};
 use chrono_humanize::{Accuracy, HumanTime, Tense};
 use color_eyre::eyre::{eyre, Result};
 use std::fmt::Debug;
-use crate::cli::App;
-use crate::printer::Printer;
 
 #[derive(Debug, Clone)]
 pub enum Example<T> {
@@ -83,7 +83,6 @@ impl<T: Output> Execution<T> {
     }
 }
 
-
 // pub trait DayArguments {
 //     // fn from_vec(extra_args: Vec<(String, String)>) -> T {()}
 //     fn set_is_example(&mut self, is_example: bool);
@@ -119,22 +118,36 @@ pub trait SolutionBuilder {
     fn build(&self, app: &App, day: u8, cli_params: Vec<String>) -> Box<dyn Solution>;
 }
 
-impl<T: 'static , U: Output + 'static, V: 'static, W: Output + 'static, X: DayArguments + 'static> SolutionBuilder for StructSolutionBuilder<T, U, V, W, X> {
+impl<
+        T: 'static,
+        U: Output + 'static,
+        V: 'static,
+        W: Output + 'static,
+        X: DayArguments + 'static,
+    > SolutionBuilder for StructSolutionBuilder<T, U, V, W, X>
+{
     fn build(&self, app: &App, day: u8, cli_params: Vec<String>) -> Box<dyn Solution> {
-        let day_args = RunParams { is_example: false, user_params: X::default()};
-        let day_data = DayData::new(app.year, day, false, app.data_directory.clone(), app.auth_token.clone());
-        Box::new(
-            StructSolution {
-                prepare_part_1: self.prepare_part_1,
-                calc_part_1: self.calc_part_1,
-                prepare_part_2: self.prepare_part_2,
-                calc_part_2: self.calc_part_2,
-                example_part_1: self.example_part_1.clone(),
-                example_part_2: self.example_part_2.clone(),
-                day_args,
-                day_data,
-            }
-        )
+        let day_args = RunParams {
+            is_example: false,
+            user_params: X::default(),
+        };
+        let day_data = DayData::new(
+            app.year,
+            day,
+            false,
+            app.data_directory.clone(),
+            app.auth_token.clone(),
+        );
+        Box::new(StructSolution {
+            prepare_part_1: self.prepare_part_1,
+            calc_part_1: self.calc_part_1,
+            prepare_part_2: self.prepare_part_2,
+            calc_part_2: self.calc_part_2,
+            example_part_1: self.example_part_1.clone(),
+            example_part_2: self.example_part_2.clone(),
+            day_args,
+            day_data,
+        })
     }
 }
 
@@ -181,7 +194,6 @@ pub struct StructSolution<T, U, V, W, X> {
 // U is is the result of part 1, W is the result of part 2. X is to differentiate between the
 // example and the main run if required
 impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> {
-
     pub fn check_example_1(&mut self) -> Execution<U> {
         self.day_args.set_is_example(true);
         let prep_start = Utc::now();
@@ -233,8 +245,7 @@ impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> 
         let run_start = Utc::now();
         let ans = (self.calc_part_1)(input, &self.day_args, &mut stack_info);
         let run_end = Utc::now();
-        let ex =
-            Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
+        let ex = Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
         ex
     }
     pub fn run_part_2(&mut self) -> Execution<W> {
@@ -245,14 +256,12 @@ impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> 
         let run_start = Utc::now();
         let ans = (self.calc_part_2)(input, &self.day_args, &mut stack_info);
         let run_end = Utc::now();
-        let ex =
-            Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
+        let ex = Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
         ex
     }
 }
 
 pub trait Solution {
-
     fn run(&mut self, part_1: bool) -> Execution<String>;
     // fn check_part_1(&mut self) -> Execution<String>;
     // fn check_part_2(&mut self) -> Execution<String>;
@@ -261,7 +270,7 @@ pub trait Solution {
     fn day_data(&self) -> &DayData;
 }
 
-impl<T, U: Output, V, W: Output, X: DayArguments> Solution for StructSolution<T, U, V, W, X > {
+impl<T, U: Output, V, W: Output, X: DayArguments> Solution for StructSolution<T, U, V, W, X> {
     // fn run_part_1(&mut self) -> Execution<String> {
     //     self.run_part_1().into_execution_string()
     // }
@@ -292,23 +301,17 @@ impl<T, U: Output, V, W: Output, X: DayArguments> Solution for StructSolution<T,
             let ex = self.check_example_1();
             ex.show_info(printer);
             let ans = ex.result;
-            println!("Example matches: {}", ans.unwrap());
+            printer.success(&format!("Example matches: {}", ans.unwrap()));
         } else {
             let ex = self.check_example_2();
             ex.show_info(printer);
             let ans = ex.result;
-            println!("Example matches: {}", ans.unwrap());
+            printer.success(&format!("Example matches: {}", ans.unwrap()));
         };
-        let ans = dialoguer::Confirm::new()
-            .with_prompt("Run the full input set?")
-            .default(true)
-            .interact()
-            .unwrap();
-        ans
+        ask_bool_input("Run the full input set?", true)
     }
 
     fn day_data(&self) -> &DayData {
         &self.day_data
     }
 }
-

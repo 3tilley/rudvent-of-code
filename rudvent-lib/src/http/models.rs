@@ -127,8 +127,8 @@ pub struct CodeSource {
 
 #[cfg(test)]
 mod tests {
+    use crate::http::models::{MachineInfo, SolutionLanguage, OS};
     use std::str::FromStr;
-    use crate::http::models::{MachineInfo, OS, SolutionLanguage};
 
     #[test]
     fn test_os_from_string() {

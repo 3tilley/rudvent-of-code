@@ -1,12 +1,12 @@
-use clap_verbosity_flag::{Level, LevelFilter};
-use std::env;
-use std::path::{Path, PathBuf};
-use clap::Parser;
-use tracing::info;
 use crate::cli::app::App;
 use crate::cli::Cli;
 use crate::printer::Printer;
 use crate::types::SolutionBuilders;
+use clap::Parser;
+use clap_verbosity_flag::{Level, LevelFilter};
+use std::env;
+use std::path::{Path, PathBuf};
+use tracing::info;
 
 pub struct AppBuilder {
     pub data_directory: Option<PathBuf>,
@@ -18,9 +18,8 @@ pub struct AppBuilder {
     pub solutions: SolutionBuilders,
 }
 
-
 impl AppBuilder {
-    pub fn new(solutions: SolutionBuilders) -> AppBuilder  {
+    pub fn new(solutions: SolutionBuilders) -> AppBuilder {
         AppBuilder {
             data_directory: None,
             days_directory: None,
@@ -46,23 +45,33 @@ impl AppBuilder {
         info!("Building app");
         let manifest_dir = env::var("CARGO_MANIFEST_DIR");
         let auth_token = self.auth_token.unwrap_or({
-            let path = Path::new(&manifest_dir.clone().expect("If not running from cargo auth-token must be set")).join(".env");
+            let path = Path::new(
+                &manifest_dir
+                    .clone()
+                    .expect("If not running from cargo auth-token must be set"),
+            )
+            .join(".env");
             dotenvy::from_path(&path).expect(&*format!("Failed to load .env file from {:?}", path));
             dotenvy::var("AUTH_TOKEN").expect("AUTH_TOKEN must be set in .env")
-           }
-        );
+        });
         App {
             data_directory: self.data_directory.unwrap_or(
                 PathBuf::from(
-                    &manifest_dir.clone().expect("If not running from cargo data-directory must be set"),
-                ).join("data")
+                    &manifest_dir
+                        .clone()
+                        .expect("If not running from cargo data-directory must be set"),
+                )
+                .join("data"),
             ),
             days_directory: self.days_directory.unwrap_or(
                 PathBuf::from(
                     &manifest_dir.expect("If not running from cargo days-directory must be set"),
-                ).join("src/days")
+                )
+                .join("src/days"),
             ),
-            log_level: self.log_level.unwrap_or(cli_args.verbose.log_level().unwrap_or(Level::Info)),
+            log_level: self
+                .log_level
+                .unwrap_or(cli_args.verbose.log_level().unwrap_or(Level::Info)),
             cli: cli_args,
             printer: Printer {},
             // TODO: Handle this better, maybe assume that it's the current year?
@@ -92,5 +101,4 @@ impl AppBuilder {
         self.auth_token = Some(auth_token);
         self
     }
-
 }

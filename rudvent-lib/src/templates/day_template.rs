@@ -1,5 +1,5 @@
 use crate::day_data::Monitor;
-use crate::solution::{RunParams, Example, Solution, SolutionBuilder, StructSolutionBuilder};
+use crate::solution::{Example, RunParams, Solution, SolutionBuilder, StructSolutionBuilder};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types

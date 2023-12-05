@@ -1,11 +1,11 @@
-pub mod app_builder;
 pub mod app;
+pub mod app_builder;
 
-pub use app_builder::AppBuilder;
 pub use app::App;
+pub use app_builder::AppBuilder;
 
-use clap::{Args, Parser};
 use clap::Subcommand;
+use clap::{Args, Parser};
 use color_eyre::eyre::{eyre, Result};
 
 #[derive(Parser, Debug)]
@@ -26,9 +26,9 @@ pub struct Cli {
 #[derive(Args, Debug)]
 #[group(required = false, multiple = false)]
 pub struct Part {
-    #[arg(short='1', long, action, default_value_t = true)]
+    #[arg(short = '1', long, action, default_value_t = true)]
     part_1: bool,
-    #[arg(short='2', long, action)]
+    #[arg(short = '2', long, action)]
     part_2: bool,
 }
 

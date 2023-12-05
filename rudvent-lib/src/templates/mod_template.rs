@@ -36,7 +36,7 @@ pub static DAYS_VEC: SolutionBuilders = &[
     None, // Day 23
     None, // Day 24
     None, // Day 25
-    // End: Add days
+          // End: Add days
 ];
 
 // static DAYS_CHECK : Vec<Box<dyn Solution>> = vec![
