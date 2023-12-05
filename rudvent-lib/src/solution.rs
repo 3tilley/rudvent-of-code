@@ -84,34 +84,44 @@ impl<T: Output> Execution<T> {
 }
 
 
-pub trait DayArguments {
-    // fn from_vec(extra_args: Vec<(String, String)>) -> T {()}
-    fn set_is_example(&mut self, is_example: bool);
+// pub trait DayArguments {
+//     // fn from_vec(extra_args: Vec<(String, String)>) -> T {()}
+//     fn set_is_example(&mut self, is_example: bool);
+//
+//     fn from_cli_params(cli_params: Vec<String>) -> Self;
+// }
+//
+pub trait DayArguments: Clone + Debug + Default {}
+impl<T> DayArguments for T where T: Clone + Debug + Default {}
 
-    fn from_cli_params(cli_params: Vec<(String, String)>) -> Self;
-}
-
-pub struct BasicRunParams {
+pub struct RunParams<T> {
     is_example: bool,
+    user_params: T,
 }
 
-impl DayArguments for BasicRunParams {
-    fn set_is_example(&mut self, is_example: bool) {
+impl<T> RunParams<T> {
+    pub fn set_is_example(&mut self, is_example: bool) {
         self.is_example = is_example
     }
-
-    fn from_cli_params(cli_params: Vec<(String, String)>) -> BasicRunParams {
-        BasicRunParams { is_example: false }
-    }
 }
 
+// impl<T: std::default::Default> DayArguments for BasicRunParams<T> {
+//     fn set_is_example(&mut self, is_example: bool) {
+//         self.is_example = is_example
+//     }
+//
+//     fn from_cli_params(cli_params: Vec<String>) -> BasicRunParams<T> {
+//         BasicRunParams { is_example: false, user_params: T::default() }
+//     }
+// }
+
 pub trait SolutionBuilder {
-    fn build(self, app: &App, day: u8, cli_params: Vec<(String, String)>) -> Box<dyn Solution>;
+    fn build(&self, app: &App, day: u8, cli_params: Vec<String>) -> Box<dyn Solution>;
 }
 
 impl<T: 'static , U: Output + 'static, V: 'static, W: Output + 'static, X: DayArguments + 'static> SolutionBuilder for StructSolutionBuilder<T, U, V, W, X> {
-    fn build(self, app: &App, day: u8, cli_params: Vec<(String, String)>) -> Box<dyn Solution> {
-        let day_args = X::from_cli_params(cli_params);
+    fn build(&self, app: &App, day: u8, cli_params: Vec<String>) -> Box<dyn Solution> {
+        let day_args = RunParams { is_example: false, user_params: X::default()};
         let day_data = DayData::new(app.year, day, false, app.data_directory.clone(), app.auth_token.clone());
         Box::new(
             StructSolution {
@@ -119,8 +129,8 @@ impl<T: 'static , U: Output + 'static, V: 'static, W: Output + 'static, X: DayAr
                 calc_part_1: self.calc_part_1,
                 prepare_part_2: self.prepare_part_2,
                 calc_part_2: self.calc_part_2,
-                example_part_1: self.example_part_1,
-                example_part_2: self.example_part_2,
+                example_part_1: self.example_part_1.clone(),
+                example_part_2: self.example_part_2.clone(),
                 day_args,
                 day_data,
             }
@@ -130,9 +140,9 @@ impl<T: 'static , U: Output + 'static, V: 'static, W: Output + 'static, X: DayAr
 
 pub struct StructSolutionBuilder<T, U, V, W, X> {
     pub prepare_part_1: fn(String) -> T,
-    pub calc_part_1: fn(T, &X, &mut Monitor) -> U,
+    pub calc_part_1: fn(T, &RunParams<X>, &mut Monitor) -> U,
     pub prepare_part_2: fn(String) -> V,
-    pub calc_part_2: fn(V, &X, &mut Monitor) -> W,
+    pub calc_part_2: fn(V, &RunParams<X>, &mut Monitor) -> W,
     pub example_part_1: Example<U>,
     pub example_part_2: Example<W>,
 }
@@ -140,9 +150,9 @@ pub struct StructSolutionBuilder<T, U, V, W, X> {
 impl<T, U: Output, V, W: Output, X: DayArguments> StructSolutionBuilder<T, U, V, W, X> {
     pub fn new(
         prepare_part_1: fn(String) -> T,
-        calc_part_1: fn(T, &X, &mut Monitor) -> U,
+        calc_part_1: fn(T, &RunParams<X>, &mut Monitor) -> U,
         prepare_part_2: fn(String) -> V,
-        calc_part_2: fn(V, &X, &mut Monitor) -> W,
+        calc_part_2: fn(V, &RunParams<X>, &mut Monitor) -> W,
         example_part_1: Example<U>,
         example_part_2: Example<W>,
     ) -> StructSolutionBuilder<T, U, V, W, X> {
@@ -159,13 +169,13 @@ impl<T, U: Output, V, W: Output, X: DayArguments> StructSolutionBuilder<T, U, V,
 
 pub struct StructSolution<T, U, V, W, X> {
     pub prepare_part_1: fn(String) -> T,
-    pub calc_part_1: fn(T, &X, &mut Monitor) -> U,
+    pub calc_part_1: fn(T, &RunParams<X>, &mut Monitor) -> U,
     pub prepare_part_2: fn(String) -> V,
-    pub calc_part_2: fn(V, &X, &mut Monitor) -> W,
+    pub calc_part_2: fn(V, &RunParams<X>, &mut Monitor) -> W,
     pub example_part_1: Example<U>,
     pub example_part_2: Example<W>,
-    pub day_args: X,
-    day_data: DayData,
+    pub day_args: RunParams<X>,
+    pub day_data: DayData,
 }
 
 // U is is the result of part 1, W is the result of part 2. X is to differentiate between the
@@ -242,28 +252,37 @@ impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> 
 }
 
 pub trait Solution {
-    fn run_part_1(&mut self) -> Execution<String>;
-    fn run_part_2(&mut self) -> Execution<String>;
-    fn check_part_1(&mut self) -> Execution<String>;
-    fn check_part_2(&mut self) -> Execution<String>;
+
+    fn run(&mut self, part_1: bool) -> Execution<String>;
+    // fn check_part_1(&mut self) -> Execution<String>;
+    // fn check_part_2(&mut self) -> Execution<String>;
     fn check_example_and_continue(&mut self, printer: &Printer, part_1: bool) -> bool;
+
+    fn day_data(&self) -> &DayData;
 }
 
 impl<T, U: Output, V, W: Output, X: DayArguments> Solution for StructSolution<T, U, V, W, X > {
-    fn run_part_1(&mut self) -> Execution<String> {
-        self.run_part_1().into_execution_string()
-    }
+    // fn run_part_1(&mut self) -> Execution<String> {
+    //     self.run_part_1().into_execution_string()
+    // }
+    //
+    // fn run_part_2(&mut self) -> Execution<String> {
+    //     self.run_part_2().into_execution_string()
+    // }
 
-    fn run_part_2(&mut self) -> Execution<String> {
-        self.run_part_2().into_execution_string()
-    }
-
-    fn check_part_1(&mut self) -> Execution<String> {
-        self.check_part_1().into_execution_string()
-    }
-
-    fn check_part_2(&mut self) -> Execution<String> {
-        self.check_part_2().into_execution_string()
+    // fn check_part_1(&mut self) -> Execution<String> {
+    //     self.check_part_1().into_execution_string()
+    // }
+    //
+    // fn check_part_2(&mut self) -> Execution<String> {
+    //     self.check_part_2().into_execution_string()
+    // }
+    fn run(&mut self, part_1: bool) -> Execution<String> {
+        if part_1 {
+            self.run_part_1().into_execution_string()
+        } else {
+            self.run_part_2().into_execution_string()
+        }
     }
 
     fn check_example_and_continue(&mut self, printer: &Printer, part_1: bool) -> bool {
@@ -286,6 +305,10 @@ impl<T, U: Output, V, W: Output, X: DayArguments> Solution for StructSolution<T,
             .interact()
             .unwrap();
         ans
+    }
+
+    fn day_data(&self) -> &DayData {
+        &self.day_data
     }
 }
 

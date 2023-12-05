@@ -1,16 +1,16 @@
-use crate::solution::SolutionBuilder;
+use crate::solution::{Solution, SolutionBuilder};
 use crate::types::SolutionBuilders;
 
 // Begin mod declarations
 // End mod declarations
 
-pub static TEST_VEC: &'static [Option<Box<dyn SolutionBuilder>>] = &[
-    Some(Box::new(crate::templates::day_template::make_sol())),
-];
+// pub static TEST_VEC: &'static [Option<Box<dyn SolutionBuilder>>] = &[
+//     Some(Box::new(crate::templates::day_template::make_sol())),
+// ];
 
 pub static DAYS_VEC: SolutionBuilders = &[
     // Begin: Add days
-    Some(crate::templates::day_template::make_sol()),
+    Some(crate::templates::day_template::make_sol),
     None, // Day 01
     None, // Day 02
     None, // Day 03

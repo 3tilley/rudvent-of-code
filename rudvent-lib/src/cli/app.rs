@@ -4,6 +4,7 @@ use clap_verbosity_flag::Level;
 use tracing::{debug, info};
 use crate::cli::{Cli, Commands};
 use color_eyre::eyre::{eyre, Result};
+use crate::advent_interactions::{ask_bool_input, DayData};
 use crate::printer::Printer;
 use crate::solution::Solution;
 
@@ -29,7 +30,7 @@ pub struct App {
 
 
 impl App {
-    pub fn run(&self) -> () {
+    pub fn run(&self) -> Result<()> {
         match &self.cli.sub_cmd {
             Commands::New { day, overwrite } => {
                 let instructions = NewInstructions {
@@ -37,28 +38,50 @@ impl App {
                     overwrite: *overwrite,
                     app: self,
                 };
-                instructions.execute().unwrap()
+                instructions.execute()?;
+                Ok(())
             }
-            Commands::Fetch { .. } => {
-                unimplemented!()
+            Commands::Fetch { day, overwrite, dry_run } => {
+                self.fetch_data(*day, *dry_run)?;
+                Ok(())
             }
-            Commands::Desc { .. } => {
-                unimplemented!()
+            Commands::Desc { day, dry_run, all_html, part_1 } => {
+                println!("Fetching description for day {}", day);
+                let day_data = DayData::new(self.year, *day, *dry_run, self.data_directory.clone(), self.auth_token.clone());
+                if *all_html {
+                    Ok(println!("{}", day_data.html(*part_1, true)?))
+                } else {
+                    let html = day_data.html(*part_1, false)?;
+                    let pretty = html2text::from_read(html.as_bytes(), 80);
+                    Ok(println!("{}", pretty))
+                }
             }
-            Commands::Run { day, example, part_2, other_args } => {
+            Commands::Run { day, example, part, other_args } => {
                 let mut instructions = RunInstructions {
                     day: *day,
                     example: *example,
-                    part_2: *part_2,
+                    part_1: part.is_part_1(),
                     other_args: other_args.clone(),
                     solutions: self.solutions,
                     app: self,
                 };
-                instructions.execute().unwrap()
+                instructions.execute()?;
+                Ok(())
             }
         }
     }
 
+    fn fetch_data(&self, day: u8, dry_run: bool) -> Result<()> {
+        self.printer.print_or_info(&format!("Fetching data {}", day));
+        let day_data = DayData::new(self.year, day, dry_run, self.data_directory.clone(), self.auth_token.clone());
+        day_data.fetch_data()?;
+        if dry_run {
+            self.printer.success(&*format!("Access successful, but because of --dry-run no data saved for day {}", day));
+        } else {
+            self.printer.success(&*format!("Fetched and saved data for day {}", day));
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -135,6 +158,7 @@ impl NewInstructions<'_> {
             return Err(eyre!("Too many matching lines found in mod.rs, this probably means there has been an error"));
         }
         fs_err::write(mod_file, new_lines.join("\n"))?;
+        self.app.printer.success(&format!("Created template for day {} in {}", self.day, day_file.to_string_lossy()));
         Ok(())
     }
 
@@ -150,7 +174,7 @@ impl NewInstructions<'_> {
 pub struct RunInstructions<'a> {
     pub day: u8,
     pub example: bool,
-    pub part_2: bool,
+    pub part_1: bool,
     pub other_args: Vec<String>,
     pub solutions: SolutionBuilders,
     pub app: &'a App,
@@ -182,20 +206,51 @@ impl RunInstructions<'_> {
 
                     }
                     Some(builder) => {
-                        builder(self.day, vec![])
+                        builder().build(self.app, self.day, self.other_args.clone())
                     }
                 }
             },
         };
+        solution.day_data().is_data_available(self.part_1)?;
+
         if self.example {
             self.app.printer.print_or_info(&*format!("Running day {}", self.day));
-            let cont = solution.check_example_and_continue(&self.app.printer, !self.part_2);
+            let cont = solution.check_example_and_continue(&self.app.printer, self.part_1);
             if !cont {
                 return Ok(());
             }
         }
-        self.app.printer.print_or_info(&*format!("Running part {} against full input", if self.part_2 { 2 } else { 1 }));
-        let ex = solution.run_part_1();
+        self.app.printer.print_or_info(&*format!("Running part {} against full input", if self.part_1 { 1 } else { 2 }));
+        let ex = solution.run(self.part_1);
+        ex.show_info(&self.app.printer);
+        let ans = ex.result.unwrap();
+        self.app.printer.print_or_info(&*format!("Answer: {}", ans));
+        let posted = solution.day_data().check_for_posting(false)?;
+        info!("Posted: {posted}");
+        if !posted {
+            self.app.printer.print_or_info("You have not posted your answer yet!");
+            if ask_bool_input("Would you like to post your answer now?", false) {
+                let result = solution.day_data().post_ans(&ans.to_string(), self.part_1);
+                match result {
+                    Ok(x) => {
+                        self.app.printer.success(&format!("Answer was correct! - {}", x));
+                        if ask_bool_input("Would you like to see the next problem?", false) {
+                            let new_html = if self.part_1 {
+                                solution.day_data().html(false, false)?
+                            } else {
+                                let next_day = solution.day_data().next_day();
+                                next_day.fetch_data()?;
+                                next_day.html(true, false)?
+                            };
+                            let pretty = html2text::from_read(new_html.as_bytes(), 80);
+                            println!("{}", pretty);
+                        }
+                        return Ok(())
+                    }
+                    Err(e) => println!("Error posting answer: {}", e),
+                }
+            }
+        }
 
         Ok(())
     }

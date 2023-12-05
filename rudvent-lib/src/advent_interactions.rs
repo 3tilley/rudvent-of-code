@@ -9,6 +9,8 @@ use std::fmt::{format, Debug};
 use std::hash::BuildHasherDefault;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
+use dialoguer::Confirm;
+use dialoguer::theme::ColorfulTheme;
 
 use tracing::{debug, info, trace, warn};
 
@@ -25,7 +27,7 @@ pub enum PostError {
     TooHigh,
 }
 
-pub(crate) struct DayData {
+pub struct DayData {
     year: u16,
     day: u8,
     data_dir: PathBuf,
@@ -70,29 +72,16 @@ impl DayData {
         })
     }
 
-    pub fn data_path(&self) -> PathBuf {
-        let path = PathBuf::from(file!());
-        let mut data_path = path.parent().unwrap().parent().unwrap().to_path_buf();
-        data_path.push("data");
-        data_path
-    }
-
     pub fn example_1_path(&self) -> PathBuf {
-        let mut data_path = self.data_path();
-        data_path.push(format!("day{}_example_1.txt", self.day));
-        data_path
+        self.data_dir.join(format!("day{}_example_1.txt", self.day))
     }
 
     pub fn example_2_path(&self) -> PathBuf {
-        let mut data_path = self.data_path();
-        data_path.push(format!("day{}_example_2.txt", self.day));
-        data_path
+        self.data_dir.join(format!("day{}_example_1.txt", self.day))
     }
 
     pub fn input_1_path(&self) -> PathBuf {
-        let mut data_path = self.data_path();
-        data_path.push(format!("day{}_input_1.txt", self.day));
-        data_path
+        self.data_dir.join(format!("day{}_input_1.txt", self.day))
     }
 
     pub fn html(&self, part_1: bool, all_html: bool) -> Result<String> {
@@ -106,8 +95,19 @@ impl DayData {
         } else {
             info!("HTML not in cache, fetching");
             let url = day_url(self.year, self.day);
-            let text = self.client.get(&url).send()?.text()?;
-            write_as_string(path, &text, false)?;
+            let resp = self.client.get(&url).send()?;
+            let text = match resp.status() {
+                reqwest::StatusCode::OK => resp.text()?,
+                e => {
+                    warn!("Error fetching HTML: {:?}", e);
+                    return Err(eyre!("Error fetching HTML: {:?}. Is your token correct?", e));
+                }
+            };
+            if self.dry_run {
+                info!("Dry-run enabled, but would be saving HTML to {}", path.to_string_lossy());
+            } else {
+                write_as_string(path, &text, false)?;
+            }
             text
         };
         if all_html {
@@ -133,8 +133,8 @@ impl DayData {
             0 => Err(eyre!("No obvious example blocks found")),
             1 => {
                 let pre = pres.get(0).unwrap();
-                if quiz_to_save(pre) {
-                    write_as_string(self.example_1_path(), &pre.inner_html(), self.dry_run);
+                if !self.dry_run && quiz_to_save(pre)  {
+                    write_as_string(self.example_1_path(), &pre.inner_html(), self.dry_run)?;
                 }
                 Ok(())
             }
@@ -146,7 +146,7 @@ impl DayData {
                     self.example_1_path(),
                     &pres.get(index).unwrap().inner_html(),
                     self.dry_run,
-                );
+                )?;
                 Ok(())
             }
         }
@@ -157,7 +157,7 @@ impl DayData {
             println!("Example file already exists, skipping");
         } else {
             println!("Fetching example data for part 1");
-            self.fetch_day_example(true);
+            self.fetch_day_example(true)?;
             println!("Saved");
         }
 
@@ -263,6 +263,25 @@ impl DayData {
             Err(e) => Err(eyre!("Error processing answer: {:?}", e)),
         }
     }
+
+    pub fn is_data_available(&self, part_1: bool) -> Result<()> {
+        let is_available = {
+            if part_1 {
+                self.example_1_path().exists() && self.input_1_path().exists()
+            } else {
+                self.example_2_path().exists() && self.input_1_path().exists()
+            }
+        };
+        if is_available {
+            Ok(())
+        } else {
+            Err(eyre!("Data not available, please run 'fetch' first"))
+        }
+    }
+
+    pub fn next_day(&self) -> DayData {
+        DayData::new(self.year, self.day + 1, self.dry_run, self.data_dir.clone(), self.auth_token.clone())
+    }
 }
 
 pub(crate) fn process_answer(post_result: String) -> std::result::Result<String, PostError> {
@@ -291,29 +310,7 @@ pub(crate) fn read_file_from_data(name: &str, relative_to: &str) -> String {
 }
 
 pub(crate) fn ask_bool_input(msg: &str, default: bool) -> bool {
-    let mut answer = String::new();
-    let yeses = vec!["yes".to_string(), "y".to_string()];
-    let noes = vec!["no".to_string(), "n".to_string()];
-    if default {
-        println!("{} [Y/n]", msg);
-    } else {
-        println!("{} [y/N]", msg);
-    }
-    let ignore_input = env::var("IGNORE_INPUT").is_ok();
-    if ignore_input {
-        default
-    } else {
-        io::stdin().read_line(&mut answer);
-        // println!("{}", answer);
-        let answer = answer.trim().to_lowercase();
-        if yeses.contains(&answer) {
-            true
-        } else if noes.contains(&answer) {
-            false
-        } else {
-            default
-        }
-    }
+    Confirm::with_theme(&ColorfulTheme::default()).with_prompt(msg).report(true).default(default).interact().unwrap()
 }
 
 pub(crate) fn ask_index_input<T: Debug>(

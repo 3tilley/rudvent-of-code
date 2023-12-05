@@ -4,7 +4,7 @@ pub mod app;
 pub use app_builder::AppBuilder;
 pub use app::App;
 
-use clap::Parser;
+use clap::{Args, Parser};
 use clap::Subcommand;
 use color_eyre::eyre::{eyre, Result};
 
@@ -21,6 +21,27 @@ pub struct Cli {
 
     #[command(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
+}
+
+#[derive(Args, Debug)]
+#[group(required = false, multiple = false)]
+pub struct Part {
+    #[arg(short='1', long, action, default_value_t = true)]
+    part_1: bool,
+    #[arg(short='2', long, action)]
+    part_2: bool,
+}
+
+impl Part {
+    pub fn is_part_1(&self) -> bool {
+        // part_2 is used here because part_1=true even when --part-2 is supplied
+        // I wish there was a better way of doing this in Clap
+        !self.part_2
+    }
+
+    pub fn is_part_2(&self) -> bool {
+        self.part_2
+    }
 }
 
 #[derive(Subcommand, Debug)]
@@ -47,7 +68,7 @@ pub enum Commands {
         #[arg(short, long)]
         all_html: bool,
         #[arg(short, long)]
-        part_2: bool,
+        part_1: bool,
     },
     /// Run the problem code for one of the days
     #[clap(trailing_var_arg = true, allow_hyphen_values = true)]
@@ -55,8 +76,8 @@ pub enum Commands {
         day: u8,
         #[arg(short, long)]
         example: bool,
-        #[arg(short, long)]
-        part_2: bool,
+        #[command(flatten)]
+        part: Part,
         other_args: Vec<String>,
     },
 }

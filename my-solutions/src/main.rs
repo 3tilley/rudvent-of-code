@@ -1,7 +1,13 @@
+use rudvent_lib::types::SolutionBuilders;
+
 mod days;
+
+static vec: SolutionBuilders = days::DAYS_VEC;
 
 fn main() -> () {
     println!("Hello, world!");
-    let app = rudvent_lib::cli::AppBuilder::new(days::DAYS_VEC).with_year(2023).build();
-    app.run()
+    let app = rudvent_lib::cli::AppBuilder::new(&vec)
+        .with_year(2023)
+        .build();
+    app.run().unwrap();
 }

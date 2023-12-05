@@ -40,7 +40,7 @@ impl AppBuilder {
     pub fn build(self) -> App {
         let cli_args = Cli::parse();
         tracing_subscriber::fmt()
-            .with_max_level(tracing::Level::TRACE)
+            .with_max_level(tracing::Level::INFO)
             .init();
         color_eyre::install().unwrap();
         info!("Building app");
