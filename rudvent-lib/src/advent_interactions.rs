@@ -240,52 +240,31 @@ impl DayData {
     fn has_been_posted(part_1: bool, document: &str, day: u8) -> Result<Option<String>, Report> {
         let selector = Selector::parse(&*format!(r#"form[action="{}/answer"]"#, day)).unwrap();
         let html = Html::parse_document(document);
-        let inputs = html.select(&selector).collect::<Vec<_>>();
-        if inputs.is_empty() {
-            Err(eyre!("No form found"))
-        } else if inputs.len() > 1 {
-            Err(eyre!("Multiple forms found"))
-        } else {
-            let form: ElementRef = *inputs.get(0).unwrap();
-            let input: Element = form
-                .first_child()
-                .unwrap()
-                .value()
-                .as_element()
-                .unwrap()
-                .clone();
-            if input.attr("value").unwrap() == "1" {
-                info!("Part 1 not posted");
-                Ok(None)
-            } else {
-                info!("Part 1 posted, part 2 has not been posted");
-                if !part_1 {
-                    return Ok(None)
-                }
 
-                // We'll use the header to select the right article, and from there get to the <p> below that contains the previous answer
-                let header_selector =
-                    Selector::parse(&*format!(r#"main article.day-desc"#)).unwrap();
-                let articles = html.select(&header_selector).collect::<Vec<_>>();
-                if articles.len() == 1 {
-                    info!("Only part 1 is available, that probably means the part 1 answer hasn't been posted");
-                    Ok(None)
-                } else if articles.len() == 2 {
-                    let puzzle_answer_p = articles[0].next_sibling_element().unwrap();
-                    if puzzle_answer_p
-                        .html()
-                        .contains("Your puzzle answer was")
-                    {
-                        let ans = puzzle_answer_p
-                            .select(&Selector::parse("code").unwrap()).next()
-                            .expect("This should be a <code> block, not found")
-                            .inner_html();
-                        Ok(Some(ans))
-                    } else {
-                        Err(eyre!("Unable to find previous answer"))
-                    }
-                }
+        // We'll use the header to select the right article, and from there get to the <p> below that contains the previous answer
+        let header_selector =
+            Selector::parse(&*format!(r#"main article.day-desc"#)).unwrap();
+        let articles = html.select(&header_selector).collect::<Vec<_>>();
+        if articles.len() == 1 {
+            info!("Only part 1 is available, that probably means the part 1 answer hasn't been posted");
+            Ok(None)
+        } else if articles.len() == 2 {
+            let article_index = if part_1 {0} else {1};
+            let puzzle_answer_p = articles[article_index].next_sibling_element().unwrap();
+            if puzzle_answer_p
+                .html()
+                .contains("Your puzzle answer was")
+            {
+                let ans = puzzle_answer_p
+                    .select(&Selector::parse("code").unwrap()).next()
+                    .expect("This should be a <code> block, not found")
+                    .inner_html();
+                Ok(Some(ans))
+            } else {
+                Ok(None)
             }
+        } else {
+            Err(eyre!("Unable to find the answer on the page"))
         }
     }
 
@@ -301,7 +280,7 @@ impl DayData {
             ])
             .send()?;
         let text = resp.text()?;
-        println!("Posted answer {}: {:?}", suffix, answer);
+        println!("Posted answer to part {}: {:?}", suffix, answer);
         let html_file = self
             .data_dir
             .join(format!("day{}_{}_answer.html", self.day, suffix));
@@ -341,7 +320,6 @@ impl DayData {
 
 pub(crate) fn process_answer(post_result: String) -> std::result::Result<String, PostError> {
     let html = Html::parse_document(&post_result);
-    println!("{}", post_result);
     let selector = Selector::parse("main article p").unwrap();
     let mut selection = html.select(&selector);
     let first_p = selection.next().unwrap();

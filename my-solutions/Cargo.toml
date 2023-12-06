@@ -11,3 +11,6 @@ rudvent-lib = { version = "0.1.0", path = "../rudvent-lib" }
 tracing = "0.1.40"
 log = "0.4.20"
 array2d = "0.3.0"
+
+[profile.release]
+debug=true

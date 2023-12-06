@@ -1,4 +1,3 @@
-use std::arch::x86_64::__m128;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take};
 use nom::character::complete::digit1;
@@ -7,6 +6,7 @@ use nom::multi::many1;
 use nom::{IResult, Parser};
 use rudvent_lib::day_data::Monitor;
 use rudvent_lib::solution::{Example, RunParams, Solution, SolutionBuilder, StructSolutionBuilder};
+use std::arch::x86_64::__m128;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use tracing::{info, info_span};
@@ -43,7 +43,12 @@ pub struct Schematic {
 }
 
 impl Schematic {
-    fn new(grid: Vec<Vec<char>>, numbers : Vec<Number>, symbols: HashSet<(usize, usize)>, gears: HashSet<(usize, usize)>) -> InputPart1 {
+    fn new(
+        grid: Vec<Vec<char>>,
+        numbers: Vec<Number>,
+        symbols: HashSet<(usize, usize)>,
+        gears: HashSet<(usize, usize)>,
+    ) -> InputPart1 {
         let rows = grid.len();
         let cols = grid[0].len();
         Schematic {
@@ -85,10 +90,18 @@ impl<'a> Character<'_> {
     }
 }
 
-fn line_parser(input: &str, row_index: usize) -> (Vec<Number>, Vec<(usize, usize)>, Vec<(usize, usize)>) {
-    let (_, char_enums) = many1(alt((Character::dot, Character::num, Character::gear, Character::symbol)))
-        .parse(input)
-        .unwrap();
+fn line_parser(
+    input: &str,
+    row_index: usize,
+) -> (Vec<Number>, Vec<(usize, usize)>, Vec<(usize, usize)>) {
+    let (_, char_enums) = many1(alt((
+        Character::dot,
+        Character::num,
+        Character::gear,
+        Character::symbol,
+    )))
+    .parse(input)
+    .unwrap();
     let mut index = 0;
     let mut symbols = vec![];
     let mut numbers = vec![];
@@ -133,12 +146,7 @@ pub fn prepare(input: String) -> InputPart1 {
         grid.push(line.chars().collect())
     }
 
-    Schematic::new(
-        grid,
-        numbers,
-        symbols,
-        gears,
-    )
+    Schematic::new(grid, numbers, symbols, gears)
 }
 
 fn get_borders(
@@ -148,18 +156,20 @@ fn get_borders(
     rows: usize,
     cols: usize,
 ) -> impl Iterator<Item = (usize, usize)> {
-    (-1..=1).flat_map(move |row| {
-        (-1..=(len as isize)).filter_map(move |(col)| {
-            let next = (
-                start_row.checked_add_signed(row),
-                start_col.checked_add_signed(col),
-            );
-            match next {
-                (Some(r), Some(c)) if (c < cols) && (r < rows) => Some((r, c)),
-                _ => None,
-            }
+    (-1..=1)
+        .flat_map(move |row| {
+            (-1..=(len as isize)).filter_map(move |(col)| {
+                let next = (
+                    start_row.checked_add_signed(row),
+                    start_col.checked_add_signed(col),
+                );
+                match next {
+                    (Some(r), Some(c)) if (c < cols) && (r < rows) => Some((r, c)),
+                    _ => None,
+                }
+            })
         })
-    }).filter(move |(r, c)| *r != start_row || *c < start_col || *c >= (start_col + len))
+        .filter(move |(r, c)| *r != start_row || *c < start_col || *c >= (start_col + len))
 }
 
 // Implement your solution for part 1 here
@@ -168,10 +178,21 @@ pub fn part_1(
     run_parameter: &RunParams<UserParams>,
     monitor: &mut Monitor,
 ) -> OutputPart1 {
-    input.numbers.iter().filter(|n| {
-        let mut borders = get_borders(n.start_location.0, n.start_location.1, n.length, input.rows, input.cols);
-        borders.any(|pos| input.symbols.contains(&pos))
-    }).map(|n| n.value).sum()
+    input
+        .numbers
+        .iter()
+        .filter(|n| {
+            let mut borders = get_borders(
+                n.start_location.0,
+                n.start_location.1,
+                n.length,
+                input.rows,
+                input.cols,
+            );
+            borders.any(|pos| input.symbols.contains(&pos))
+        })
+        .map(|n| n.value)
+        .sum()
 }
 
 // If the puzzle requires a different input for part 2, this function can be updated
@@ -185,23 +206,41 @@ pub fn part_2(
     monitor: &mut Monitor,
 ) -> OutputPart1 {
     // The HashMap type is <(gear_row, gear_col), (num_count, running_product)>
-    let mut gear_map: HashMap<(usize, usize), (usize, usize)> = input.gears.iter().map(|&g| (g, (0, 1))).collect();
-    input.numbers.iter().flat_map(|n| {
-        let mut borders = get_borders(n.start_location.0, n.start_location.1, n.length, input.rows, input.cols);
-        borders.filter_map(|pos| if (&input.gears).contains(&pos) {Some((*n, pos))} else {None})
-    }).for_each(|(num, gear)| {
-        let mut val = gear_map.get_mut(&gear);
-        if let Some((count, product)) = val {
-            *count += 1;
-            *product *= num.value
-        }
-    });
-    gear_map.iter().filter_map(|(_, (count, product))| {
-        match count {
+    let mut gear_map: HashMap<(usize, usize), (usize, usize)> =
+        input.gears.iter().map(|&g| (g, (0, 1))).collect();
+    input
+        .numbers
+        .iter()
+        .flat_map(|n| {
+            let mut borders = get_borders(
+                n.start_location.0,
+                n.start_location.1,
+                n.length,
+                input.rows,
+                input.cols,
+            );
+            borders.filter_map(|pos| {
+                if (&input.gears).contains(&pos) {
+                    Some((*n, pos))
+                } else {
+                    None
+                }
+            })
+        })
+        .for_each(|(num, gear)| {
+            let mut val = gear_map.get_mut(&gear);
+            if let Some((count, product)) = val {
+                *count += 1;
+                *product *= num.value
+            }
+        });
+    gear_map
+        .iter()
+        .filter_map(|(_, (count, product))| match count {
             2 => Some(product),
             _ => None,
-        }
-    }).sum()
+        })
+        .sum()
 }
 
 // ----- There is no need to change anything below this line -----
@@ -234,13 +273,13 @@ mod tests {
 
     #[test]
     fn test_get_borders() {
-        let borders = get_borders(1,1, 1, 5, 6).collect::<Vec<_>>();
+        let borders = get_borders(1, 1, 1, 5, 6).collect::<Vec<_>>();
         assert_eq!(borders.len(), 8);
     }
 
     #[test]
     fn test_get_borders_corner() {
-        let borders = get_borders(0,0, 2,5,6).collect::<Vec<_>>();
+        let borders = get_borders(0, 0, 2, 5, 6).collect::<Vec<_>>();
         println!("{:?}", borders);
         assert_eq!(borders.len(), 5)
     }
