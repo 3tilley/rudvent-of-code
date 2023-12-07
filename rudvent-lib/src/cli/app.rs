@@ -282,7 +282,7 @@ impl RunInstructions<'_> {
         ));
         let ex = solution.run(self.part_1);
         ex.show_info(&self.app.printer);
-        let ans = ex.result.unwrap();
+        let ans = ex.result().unwrap();
         self.app.printer.print_or_info(&*format!("Answer: {}", ans));
         let posted = solution.day_data().check_for_posting(self.part_1)?;
         info!("Posted: {}", posted.is_some());

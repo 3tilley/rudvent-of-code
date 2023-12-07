@@ -4,11 +4,11 @@ use nom::character::complete::u64 as nom64;
 use nom::multi::separated_list1;
 use nom::sequence::Tuple;
 use nom::{IResult, Parser};
-use rudvent_lib::day_data::Monitor;
-use rudvent_lib::solution::{Example, RunParams, Solution, SolutionBuilder, StructSolutionBuilder};
-use std::cmp::{max, min};
+use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
+use std::cmp::max;
 use std::str::FromStr;
 use tracing::{info, info_span};
+use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -23,6 +23,7 @@ const EXAMPLE_2_ANS: OutputPart2 = 2286;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
 type UserParams = ();
+type UserMonitor = EmptyUserMonitor;
 
 #[derive(Debug)]
 pub struct Game {
@@ -102,16 +103,7 @@ impl Draw {
     }
 }
 
-// fn draw_parser(input: &str) -> IResult<&str, Draw> {
-//
-// }
 
-#[derive(Debug, PartialEq)]
-enum Colour {
-    Blue,
-    Red,
-    Green,
-}
 // This function is called to prepare the input for part 1
 pub fn prepare(input: String) -> InputPart1 {
     input
@@ -124,7 +116,7 @@ pub fn prepare(input: String) -> InputPart1 {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut Monitor,
+    monitor: &mut RuntimeMonitor<UserMonitor>,
 ) -> OutputPart1 {
     let max_red = 12;
     let max_green = 13;
@@ -153,7 +145,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut Monitor,
+    monitor: &mut RuntimeMonitor<UserMonitor>,
 ) -> OutputPart1 {
     input
         .iter()

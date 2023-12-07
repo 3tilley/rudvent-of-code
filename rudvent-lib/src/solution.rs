@@ -1,108 +1,19 @@
+pub mod execution;
+
 use crate::advent_interactions::{ask_bool_input, DayData};
 use crate::cli::App;
-use crate::day_data::Monitor;
 use crate::printer::Printer;
 use crate::types::Output;
-use chrono::{DateTime, Utc};
-use chrono_humanize::{Accuracy, HumanTime, Tense};
-use color_eyre::eyre::{eyre, Result};
+use chrono::Utc;
+use color_eyre::eyre::eyre;
 use std::fmt::Debug;
-
-#[derive(Debug, Clone)]
-pub enum Example<T> {
-    Value(T),
-    Regex(String),
-}
+use execution::{DayArguments, Example, Execution, RunParams};
+use crate::solution::execution::{ExecutionResult, RuntimeMonitor};
 
 // #[derive(Debug, Clone, Display)]
 // pub enum PostResult {
 //     Success,
 // }
-
-impl<T: Clone> Example<T> {
-    pub fn value(&self) -> T {
-        match self {
-            Example::Value(v) => v.clone(),
-            Example::Regex(s) => unimplemented!(),
-        }
-    }
-}
-
-pub struct Execution<T: Output> {
-    pub result: Result<T>,
-    pub preparation_start: DateTime<Utc>,
-    pub run_start: DateTime<Utc>,
-    pub run_end: DateTime<Utc>,
-    pub stack_info: Monitor,
-}
-
-impl<T: Output> Execution<T> {
-    pub fn new(
-        result: Result<T>,
-        preparation_start: DateTime<Utc>,
-        run_start: DateTime<Utc>,
-        run_end: DateTime<Utc>,
-        stack_info: Monitor,
-    ) -> Execution<T> {
-        Execution {
-            result,
-            preparation_start,
-            run_start,
-            run_end,
-            stack_info,
-        }
-    }
-
-    pub fn show_info(&self, printer: &Printer) {
-        let calc_duration = self.run_end - self.run_start;
-        let total_duration = self.run_end - self.preparation_start;
-        let calc_frac = (calc_duration.num_nanoseconds().unwrap() as f32)
-            / (total_duration.num_nanoseconds().unwrap() as f32);
-        let hc = HumanTime::from(calc_duration);
-        let tc = HumanTime::from(total_duration);
-        printer.print_or_info(&*format!(
-            "Completed part in {}.  Calculation time: {} ({:.1}%)",
-            tc.to_text_en(Accuracy::Precise, Tense::Present),
-            hc.to_text_en(Accuracy::Precise, Tense::Present),
-            calc_frac * 100.0
-        ));
-    }
-
-    pub fn into_execution_string(self) -> Execution<String> {
-        let res = match self.result {
-            Ok(r) => Ok(format!("{}", r)),
-            Err(e) => Err(e),
-        };
-        Execution::new(
-            res,
-            self.preparation_start,
-            self.run_start,
-            self.run_end,
-            self.stack_info,
-        )
-    }
-}
-
-// pub trait DayArguments {
-//     // fn from_vec(extra_args: Vec<(String, String)>) -> T {()}
-//     fn set_is_example(&mut self, is_example: bool);
-//
-//     fn from_cli_params(cli_params: Vec<String>) -> Self;
-// }
-//
-pub trait DayArguments: Clone + Debug + Default {}
-impl<T> DayArguments for T where T: Clone + Debug + Default {}
-
-pub struct RunParams<T> {
-    is_example: bool,
-    user_params: T,
-}
-
-impl<T> RunParams<T> {
-    pub fn set_is_example(&mut self, is_example: bool) {
-        self.is_example = is_example
-    }
-}
 
 // impl<T: std::default::Default> DayArguments for BasicRunParams<T> {
 //     fn set_is_example(&mut self, is_example: bool) {
@@ -124,7 +35,8 @@ impl<
         V: 'static,
         W: Output + 'static,
         X: DayArguments + 'static,
-    > SolutionBuilder for StructSolutionBuilder<T, U, V, W, X>
+        Z: Default + 'static,
+    > SolutionBuilder for StructSolutionBuilder<T, U, V, W, X, Z>
 {
     fn build(&self, app: &App, day: u8, cli_params: Vec<String>) -> Box<dyn Solution> {
         let day_args = RunParams {
@@ -151,24 +63,24 @@ impl<
     }
 }
 
-pub struct StructSolutionBuilder<T, U, V, W, X> {
+pub struct StructSolutionBuilder<T, U, V, W, X, Z> {
     pub prepare_part_1: fn(String) -> T,
-    pub calc_part_1: fn(T, &RunParams<X>, &mut Monitor) -> U,
+    pub calc_part_1: fn(T, &RunParams<X>, &mut RuntimeMonitor<Z>) -> U,
     pub prepare_part_2: fn(String) -> V,
-    pub calc_part_2: fn(V, &RunParams<X>, &mut Monitor) -> W,
+    pub calc_part_2: fn(V, &RunParams<X>, &mut RuntimeMonitor<Z>) -> W,
     pub example_part_1: Example<U>,
     pub example_part_2: Example<W>,
 }
 
-impl<T, U: Output, V, W: Output, X: DayArguments> StructSolutionBuilder<T, U, V, W, X> {
+impl<T, U: Output, V, W: Output, X: DayArguments, Z> StructSolutionBuilder<T, U, V, W, X, Z> {
     pub fn new(
         prepare_part_1: fn(String) -> T,
-        calc_part_1: fn(T, &RunParams<X>, &mut Monitor) -> U,
+        calc_part_1: fn(T, &RunParams<X>, &mut RuntimeMonitor<Z>) -> U,
         prepare_part_2: fn(String) -> V,
-        calc_part_2: fn(V, &RunParams<X>, &mut Monitor) -> W,
+        calc_part_2: fn(V, &RunParams<X>, &mut RuntimeMonitor<Z>) -> W,
         example_part_1: Example<U>,
         example_part_2: Example<W>,
-    ) -> StructSolutionBuilder<T, U, V, W, X> {
+    ) -> StructSolutionBuilder<T, U, V, W, X, Z> {
         StructSolutionBuilder {
             prepare_part_1,
             calc_part_1,
@@ -180,11 +92,11 @@ impl<T, U: Output, V, W: Output, X: DayArguments> StructSolutionBuilder<T, U, V,
     }
 }
 
-pub struct StructSolution<T, U, V, W, X> {
+pub struct StructSolution<T, U, V, W, X, Z> {
     pub prepare_part_1: fn(String) -> T,
-    pub calc_part_1: fn(T, &RunParams<X>, &mut Monitor) -> U,
+    pub calc_part_1: fn(T, &RunParams<X>, &mut RuntimeMonitor<Z>) -> U,
     pub prepare_part_2: fn(String) -> V,
-    pub calc_part_2: fn(V, &RunParams<X>, &mut Monitor) -> W,
+    pub calc_part_2: fn(V, &RunParams<X>, &mut RuntimeMonitor<Z>) -> W,
     pub example_part_1: Example<U>,
     pub example_part_2: Example<W>,
     pub day_args: RunParams<X>,
@@ -193,11 +105,11 @@ pub struct StructSolution<T, U, V, W, X> {
 
 // U is is the result of part 1, W is the result of part 2. X is to differentiate between the
 // example and the main run if required
-impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> {
-    pub fn check_example_1(&mut self) -> Execution<U> {
+impl<T, U: Output, V, W: Output, X: DayArguments, Z: Default> StructSolution<T, U, V, W, X, Z> {
+    pub fn check_example_1(&mut self) -> Execution<U, Z> {
         self.day_args.set_is_example(true);
         let prep_start = Utc::now();
-        let mut stack_info = Monitor::new();
+        let mut stack_info = RuntimeMonitor::<Z>::new();
         let input = (self.prepare_part_1)(self.day_data.example_1());
         let run_start = Utc::now();
         let ans = (self.calc_part_1)(input, &self.day_args, &mut stack_info);
@@ -216,10 +128,10 @@ impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> 
         ex
     }
 
-    pub fn check_example_2(&mut self) -> Execution<W> {
+    pub fn check_example_2(&mut self) -> Execution<W, Z> {
         self.day_args.set_is_example(true);
         let prep_start = Utc::now();
-        let mut stack_info = Monitor::new();
+        let mut stack_info = RuntimeMonitor::<Z>::new();
         let input = (self.prepare_part_2)(self.day_data.example_2());
         let run_start = Utc::now();
         let ans = (self.calc_part_2)(input, &self.day_args, &mut stack_info);
@@ -237,10 +149,10 @@ impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> 
         let ex = Execution::new(res, prep_start, run_start, run_end, stack_info);
         ex
     }
-    pub fn run_part_1(&mut self) -> Execution<U> {
+    pub fn run_part_1(&mut self) -> Execution<U, Z> {
         self.day_args.set_is_example(false);
         let prep_start = Utc::now();
-        let mut stack_info = Monitor::new();
+        let mut stack_info = RuntimeMonitor::<Z>::new();
         let input = (self.prepare_part_1)(self.day_data.input_1());
         let run_start = Utc::now();
         let ans = (self.calc_part_1)(input, &self.day_args, &mut stack_info);
@@ -248,10 +160,10 @@ impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> 
         let ex = Execution::new(Ok(ans), prep_start, run_start, run_end, stack_info);
         ex
     }
-    pub fn run_part_2(&mut self) -> Execution<W> {
+    pub fn run_part_2(&mut self) -> Execution<W, Z> {
         self.day_args.set_is_example(false);
         let prep_start = Utc::now();
-        let mut stack_info = Monitor::new();
+        let mut stack_info = RuntimeMonitor::new();
         let input = (self.prepare_part_2)(self.day_data.input_2());
         let run_start = Utc::now();
         let ans = (self.calc_part_2)(input, &self.day_args, &mut stack_info);
@@ -262,15 +174,16 @@ impl<T, U: Output, V, W: Output, X: DayArguments> StructSolution<T, U, V, W, X> 
 }
 
 pub trait Solution {
-    fn run(&mut self, part_1: bool) -> Execution<String>;
+    fn run(&mut self, part_1: bool) -> Box<dyn ExecutionResult>;
     // fn check_part_1(&mut self) -> Execution<String>;
     // fn check_part_2(&mut self) -> Execution<String>;
     fn check_example_and_continue(&mut self, printer: &Printer, part_1: bool) -> bool;
 
     fn day_data(&self) -> &DayData;
+
 }
 
-impl<T, U: Output, V, W: Output, X: DayArguments> Solution for StructSolution<T, U, V, W, X> {
+impl<T, U: Output + 'static, V, W: Output + 'static, X: DayArguments, Z: Default + 'static> Solution for StructSolution<T, U, V, W, X, Z> {
     // fn run_part_1(&mut self) -> Execution<String> {
     //     self.run_part_1().into_execution_string()
     // }
@@ -286,11 +199,11 @@ impl<T, U: Output, V, W: Output, X: DayArguments> Solution for StructSolution<T,
     // fn check_part_2(&mut self) -> Execution<String> {
     //     self.check_part_2().into_execution_string()
     // }
-    fn run(&mut self, part_1: bool) -> Execution<String> {
+    fn run(&mut self, part_1: bool) -> Box<dyn ExecutionResult> {
         if part_1 {
-            self.run_part_1().into_execution_string()
+            Box::new(self.run_part_1())
         } else {
-            self.run_part_2().into_execution_string()
+            Box::new(self.run_part_2())
         }
     }
 

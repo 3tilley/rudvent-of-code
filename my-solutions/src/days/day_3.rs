@@ -1,15 +1,12 @@
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take};
 use nom::character::complete::digit1;
-use nom::character::is_digit;
 use nom::multi::many1;
 use nom::{IResult, Parser};
-use rudvent_lib::day_data::Monitor;
-use rudvent_lib::solution::{Example, RunParams, Solution, SolutionBuilder, StructSolutionBuilder};
-use std::arch::x86_64::__m128;
+use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
-use tracing::{info, info_span};
+use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -24,6 +21,7 @@ const EXAMPLE_2_ANS: OutputPart2 = 467835;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
 type UserParams = ();
+type UserMonitor = EmptyUserMonitor;
 
 #[derive(Debug, Copy, Clone)]
 struct Number {
@@ -176,7 +174,7 @@ fn get_borders(
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut Monitor,
+    monitor: &mut RuntimeMonitor<UserMonitor>,
 ) -> OutputPart1 {
     input
         .numbers
@@ -203,7 +201,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut Monitor,
+    monitor: &mut RuntimeMonitor<UserMonitor>,
 ) -> OutputPart1 {
     // The HashMap type is <(gear_row, gear_col), (num_count, running_product)>
     let mut gear_map: HashMap<(usize, usize), (usize, usize)> =

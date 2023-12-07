@@ -1,8 +1,8 @@
-use rudvent_lib::day_data::Monitor;
 use rudvent_lib::solution::{
-    Example, RunParams, Solution, SolutionBuilder, StructSolution, StructSolutionBuilder,
+    SolutionBuilder, StructSolutionBuilder,
 };
 use std::str::FromStr;
+use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -17,6 +17,7 @@ const EXAMPLE_2_ANS: OutputPart2 = 281;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
 type UserParams = ();
+type UserMonitor = EmptyUserMonitor;
 
 // This function is called to prepare the input for part 1
 pub fn prepare(input: String) -> InputPart1 {
@@ -27,7 +28,7 @@ pub fn prepare(input: String) -> InputPart1 {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut Monitor,
+    monitor: &mut RuntimeMonitor<UserMonitor>,
 ) -> OutputPart1 {
     input
         .iter()
@@ -54,7 +55,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart2,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut Monitor,
+    monitor: &mut RuntimeMonitor<UserMonitor>,
 ) -> OutputPart1 {
     let swapped = input
         .replace("one", "one1one")

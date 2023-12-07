@@ -1,5 +1,5 @@
-use crate::day_data::Monitor;
-use crate::solution::{Example, RunParams, Solution, SolutionBuilder, StructSolutionBuilder};
+use crate::solution::{SolutionBuilder, StructSolutionBuilder};
+use crate::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -14,6 +14,7 @@ const EXAMPLE_2_ANS: OutputPart2 = 0;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
 type UserParams = ();
+type UserMonitor = EmptyUserMonitor;
 
 // This function is called to prepare the input for part 1
 pub fn prepare(input: String) -> InputPart1 {
@@ -27,7 +28,7 @@ pub fn prepare(input: String) -> InputPart1 {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut Monitor,
+    monitor: &mut RuntimeMonitor<EmptyUserMonitor>,
 ) -> OutputPart1 {
     todo!("Implement part 1")
 }
@@ -40,7 +41,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut Monitor,
+    monitor: &mut RuntimeMonitor<EmptyUserMonitor>,
 ) -> OutputPart1 {
     todo!("Implement part 2")
 }

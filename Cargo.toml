@@ -7,3 +7,6 @@ members = [
   "rudvent-lib",
   "my-solutions"
 ]
+
+[profile.release]
+debug = true

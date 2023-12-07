@@ -1,14 +1,13 @@
 use nom::bytes::complete::{tag, take_until1, take_while};
-use nom::character::complete::{digit1, space1};
+use nom::character::complete::space1;
 use nom::combinator::map_res;
 use nom::multi::many1;
-use nom::number::complete::u64 as nom64;
 use nom::sequence::{preceded, separated_pair, Tuple};
 use nom::{AsChar, IResult, Parser};
-use rudvent_lib::day_data::Monitor;
-use rudvent_lib::solution::{Example, RunParams, Solution, SolutionBuilder, StructSolutionBuilder};
-use std::collections::{HashMap, HashSet};
+use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
+use std::collections::HashSet;
 use std::str::FromStr;
+use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -71,6 +70,7 @@ const EXAMPLE_2_ANS: OutputPart2 = 30;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
 type UserParams = ();
+type UserMonitor = EmptyUserMonitor;
 
 // This function is called to prepare the input for part 1
 pub fn prepare(input: String) -> InputPart1 {
@@ -84,7 +84,7 @@ pub fn prepare(input: String) -> InputPart1 {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut Monitor,
+    monitor: &mut RuntimeMonitor<UserMonitor>,
 ) -> OutputPart1 {
     input.iter().map(|card| card.score()).sum()
 }
@@ -97,7 +97,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut Monitor,
+    monitor: &mut RuntimeMonitor<UserMonitor>,
 ) -> OutputPart1 {
     let mut counts: Vec<usize> = vec![1; input.len()];
     input.iter().enumerate().for_each(|(i, card)| {

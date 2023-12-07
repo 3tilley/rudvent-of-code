@@ -3,10 +3,10 @@ use rudvent_lib::types::SolutionBuilders;
 // Begin mod declarations
 mod day_1;
 mod day_2;
-mod day_23;
 mod day_3;
 mod day_4;
 mod day_5;
+mod day_6;
 // End mod declarations
 
 // pub static TEST_VEC: &'static [Option<Box<dyn SolutionBuilder>>] = &[
@@ -20,7 +20,7 @@ pub static DAYS_VEC: SolutionBuilders = &[
     Some(day_3::make_sol),  // Day 03
     Some(day_4::make_sol),  // Day 04
     Some(day_5::make_sol),  // Day 05
-    None,                   // Day 06
+    Some(day_6::make_sol),                   // Day 06
     None,                   // Day 07
     None,                   // Day 08
     None,                   // Day 09
@@ -37,7 +37,7 @@ pub static DAYS_VEC: SolutionBuilders = &[
     None,                   // Day 20
     None,                   // Day 21
     None,                   // Day 22
-    Some(day_23::make_sol), // Day 23
+    None,                   // Day 23
     None,                   // Day 24
     None,                   // Day 25
                             // End: Add days
