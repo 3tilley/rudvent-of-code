@@ -1,12 +1,12 @@
-use crate::types::SolutionBuilders;
+use rudvent_lib::types::SolutionBuilders;
 
 // Begin mod declarations
+mod day_1;
 // End mod declarations
 
-pub static DAYS_ARRAY: SolutionBuilders = &[
+pub static DAYS_VEC: SolutionBuilders = &[
     // Begin: Add days
-    Some(crate::templates::day_template::make_sol),
-    None, // Day 01
+    Some(day_1::make_sol), // Day 01
     None, // Day 02
     None, // Day 03
     None, // Day 04

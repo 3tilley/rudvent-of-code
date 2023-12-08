@@ -1,11 +1,11 @@
 [workspace]
-edition = "2021"
 resolver = "2"
 
 members = [
   "rudvent",
   "rudvent-lib",
-  "my-solutions"
+  "my-solutions",
+  "rudvent-lib/examples/*"
 ]
 
 [profile.release]

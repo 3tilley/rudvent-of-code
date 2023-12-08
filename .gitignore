@@ -1,5 +1,6 @@
 **/.idea/
 **/.env
+!rudvent-lib/examples/**/.env
 
 # Vim
 [._]*.un~

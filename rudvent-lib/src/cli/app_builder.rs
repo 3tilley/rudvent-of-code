@@ -3,12 +3,15 @@ use crate::cli::Cli;
 use crate::printer::Printer;
 use crate::types::SolutionBuilders;
 use clap::Parser;
-use clap_verbosity_flag::{Level, LevelFilter};
+use clap_verbosity_flag::{Level};
 use std::env;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use tracing::info;
+use tracing::level_filters::LevelFilter;
 
 pub struct AppBuilder {
+    pub project_root: Option<PathBuf>,
     pub data_directory: Option<PathBuf>,
     pub days_directory: Option<PathBuf>,
     pub log_level: Option<Level>,
@@ -21,6 +24,7 @@ pub struct AppBuilder {
 impl AppBuilder {
     pub fn new(solutions: SolutionBuilders) -> AppBuilder {
         AppBuilder {
+            project_root: None,
             data_directory: None,
             days_directory: None,
             log_level: None,
@@ -38,26 +42,32 @@ impl AppBuilder {
 
     pub fn build(self) -> App {
         let cli_args = Cli::parse();
+        // It seems log::LevelFilter -> &str -> tracing::LevelFilter is the easiest way to convert
+        let verbosity = cli_args.verbose.log_level_filter().as_str();
         tracing_subscriber::fmt()
-            .with_max_level(tracing::Level::INFO)
+            .with_max_level(tracing::level_filters::LevelFilter::from_str(verbosity).unwrap())
             .init();
         color_eyre::install().unwrap();
         info!("Building app");
         let manifest_dir = env::var("CARGO_MANIFEST_DIR");
-        let auth_token = self.auth_token.unwrap_or({
-            let path = Path::new(
-                &manifest_dir
-                    .clone()
-                    .expect("If not running from cargo auth-token must be set"),
-            )
-            .join(".env");
-            dotenvy::from_path(&path).expect(&*format!("Failed to load .env file from {:?}", path));
-            dotenvy::var("AUTH_TOKEN").expect("AUTH_TOKEN must be set in .env")
-        });
+        let auth_token = {
+            self.auth_token.unwrap_or({
+                dotenvy::var("AUTH_TOKEN").unwrap_or({
+                let path = Path::new(
+                    &manifest_dir
+                        .clone()
+                        .expect("If not running from cargo auth-token must be set"),
+                )
+                    .join(".env");
+                dotenvy::from_path(&path).expect(&*format!("Failed to load .env file from {:?}", path));
+                dotenvy::var("AUTH_TOKEN").expect("AUTH_TOKEN must be set in .env")})
+        })};
+        let project_root = manifest_dir.clone().ok().map(|d| PathBuf::from(d));
         App {
+            project_root,
             data_directory: self.data_directory.unwrap_or(
                 PathBuf::from(
-                    &manifest_dir
+                    manifest_dir
                         .clone()
                         .expect("If not running from cargo data-directory must be set"),
                 )

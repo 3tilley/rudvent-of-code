@@ -4,11 +4,11 @@ use nom::character::complete::u64 as nom64;
 use nom::multi::separated_list1;
 use nom::sequence::Tuple;
 use nom::{IResult, Parser};
+use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::cmp::max;
 use std::str::FromStr;
 use tracing::{info, info_span};
-use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -102,7 +102,6 @@ impl Draw {
         Ok((input, combined))
     }
 }
-
 
 // This function is called to prepare the input for part 1
 pub fn prepare(input: String) -> InputPart1 {

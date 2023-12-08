@@ -1,5 +1,7 @@
 pub mod app;
 pub mod app_builder;
+mod new;
+mod solve;
 
 pub use app::App;
 pub use app_builder::AppBuilder;
@@ -72,7 +74,7 @@ pub enum Commands {
     },
     /// Run the problem code for one of the days
     #[clap(trailing_var_arg = true, allow_hyphen_values = true)]
-    Run {
+    Solve {
         day: u8,
         #[arg(short, long)]
         example: bool,

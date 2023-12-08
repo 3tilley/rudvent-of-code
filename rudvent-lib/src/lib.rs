@@ -1,3 +1,4 @@
+#![allow(warnings)]
 mod advent_interactions;
 pub mod cli;
 pub mod day_data;

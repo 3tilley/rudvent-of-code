@@ -11,8 +11,10 @@ use std::fmt::{format, Debug};
 use std::hash::BuildHasherDefault;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
+use std::str::FromStr;
 
 use tracing::{debug, info, trace, warn};
+use crate::advent_interactions::PostError::UnknownError;
 
 // const url template
 const DAY_TEMPLATE: &str = "https://adventofcode.com/{year}/day/{day}";
@@ -27,6 +29,9 @@ fn day_url(year: u16, day: u8) -> String {
 pub enum PostError {
     TooLow,
     TooHigh,
+    // Wait time is in minutes
+    TooManyAttempts(usize),
+    UnknownError(String),
 }
 
 pub struct DayData {
@@ -320,13 +325,35 @@ impl DayData {
 
 pub(crate) fn process_answer(post_result: String) -> std::result::Result<String, PostError> {
     let html = Html::parse_document(&post_result);
+    println!("{}", html.html());
     let selector = Selector::parse("main article p").unwrap();
     let mut selection = html.select(&selector);
     let first_p = selection.next().unwrap();
     if first_p.inner_html().contains("That's the right answer!") {
         Ok("That's the right answer!".to_string())
-    } else {
+    } else if first_p.inner_html().contains("your answer is too low") {
         Err(PostError::TooLow)
+    } else if first_p.inner_html().contains("your answer is too high") {
+        Err(PostError::TooHigh)
+    } else if first_p.inner_html().contains("Because you have guess incorrectly"){
+        // The wrong answer has been posted too many times.
+        let wait_string = "on this puzzle, please wait ";
+        let index_of_wait = first_p.inner_html().find(wait_string);
+        let offset = index_of_wait.unwrap() + wait_string.len();
+        let wait_block = &first_p.inner_html()[offset..offset+10];
+        debug!("Wait_block: {}", wait_block);
+        let mut words_iter = wait_block.split_whitespace();
+        let wait_amount = words_iter.next().unwrap();
+        info!("Wait_amount: {}", wait_amount);
+        let wait_unit = words_iter.next().unwrap();
+        info!("Wait_unit: {}", wait_amount);
+        if wait_unit == "minutes" {
+            Err(PostError::TooManyAttempts(usize::from_str(wait_amount).unwrap()))
+        } else {
+            Err(UnknownError(first_p.inner_html()))
+        }
+    } else {
+        Err(UnknownError(first_p.inner_html()))
     }
 }
 

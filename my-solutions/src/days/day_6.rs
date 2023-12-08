@@ -1,7 +1,7 @@
+use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::str::FromStr;
 use tracing::{info, info_span};
-use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
-use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -27,9 +27,25 @@ pub struct Race {
 // This function is called to prepare the input for part 1
 pub fn prepare(input: String) -> InputPart1 {
     let mut lines = input.lines();
-    let times = lines.next().unwrap().split_whitespace().skip(1).map(|t| usize::from_str(t).unwrap());
-    let dists = lines.next().unwrap().split_whitespace().skip(1).map(|t| usize::from_str(t).unwrap());
-    times.zip(dists).map(|(t, d)| Race {time: t, record_distance: d}).collect()
+    let times = lines
+        .next()
+        .unwrap()
+        .split_whitespace()
+        .skip(1)
+        .map(|t| usize::from_str(t).unwrap());
+    let dists = lines
+        .next()
+        .unwrap()
+        .split_whitespace()
+        .skip(1)
+        .map(|t| usize::from_str(t).unwrap());
+    times
+        .zip(dists)
+        .map(|(t, d)| Race {
+            time: t,
+            record_distance: d,
+        })
+        .collect()
 }
 
 // Implement your solution for part 1 here
@@ -42,10 +58,10 @@ pub fn prepare(input: String) -> InputPart1 {
 fn num_possibles(t_t: f64, w_d: f64) -> usize {
     // Adjust for exact matches
     let w_d = w_d + 1.0;
-    let span = info_span!("Counting possibes", time=t_t, dist=w_d);
+    let span = info_span!("Counting possibes", time = t_t, dist = w_d);
     let enter_ = span.enter();
-    let low_time = (t_t - (t_t*t_t - 4.0*w_d).sqrt()) / 2.0;
-    let high_time = (t_t + (t_t*t_t - 4.0*w_d).sqrt()) / 2.0;
+    let low_time = (t_t - (t_t * t_t - 4.0 * w_d).sqrt()) / 2.0;
+    let high_time = (t_t + (t_t * t_t - 4.0 * w_d).sqrt()) / 2.0;
     let ceil_low = low_time.ceil() as usize;
     let floor_high = high_time.floor() as usize;
     let res = floor_high - ceil_low + 1;
@@ -57,15 +73,29 @@ pub fn part_1(
     run_parameter: &RunParams<UserParams>,
     monitor: &mut RuntimeMonitor<EmptyUserMonitor>,
 ) -> OutputPart1 {
-    input.iter().map(|r| num_possibles(r.time as f64, r.record_distance as f64)).product()
+    input
+        .iter()
+        .map(|r| num_possibles(r.time as f64, r.record_distance as f64))
+        .product()
 }
 
 // If the puzzle requires a different input for part 2, this function can be updated
 pub fn prepare_2(input: String) -> InputPart2 {
     let mut lines = input.lines();
-    let time = usize::from_str(&lines.next().unwrap().replace("Time:", "").replace(" ", "")).unwrap();
-    let dist = usize::from_str(&lines.next().unwrap().replace("Distance:", "").replace(" ", "")).unwrap();
-    Race{ time, record_distance: dist }
+    let time =
+        usize::from_str(&lines.next().unwrap().replace("Time:", "").replace(" ", "")).unwrap();
+    let dist = usize::from_str(
+        &lines
+            .next()
+            .unwrap()
+            .replace("Distance:", "")
+            .replace(" ", ""),
+    )
+    .unwrap();
+    Race {
+        time,
+        record_distance: dist,
+    }
 }
 
 pub fn part_2(

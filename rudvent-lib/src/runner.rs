@@ -7,6 +7,6 @@ pub fn run() {
         Commands::New { .. } => {}
         Commands::Fetch { .. } => {}
         Commands::Desc { .. } => {}
-        Commands::Run { .. } => {}
+        Commands::Solve { .. } => {}
     }
 }

@@ -4,10 +4,10 @@ use nom::combinator::map_res;
 use nom::multi::many1;
 use nom::sequence::{preceded, separated_pair, Tuple};
 use nom::{AsChar, IResult, Parser};
+use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::HashSet;
 use std::str::FromStr;
-use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
