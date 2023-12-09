@@ -13,6 +13,7 @@ pub struct SolveInstructions<'a> {
     pub day: u8,
     pub example: bool,
     pub part_1: bool,
+    pub no_post: bool,
     pub other_args: Vec<String>,
     pub solutions: SolutionBuilders,
     pub app: &'a App,
@@ -82,6 +83,8 @@ impl SolveInstructions<'_> {
                 }
             },
             None => {
+                if !self.no_post {
+
                 self.app
                     .printer
                     .print_or_info("You have not posted your answer yet!");
@@ -108,6 +111,7 @@ impl SolveInstructions<'_> {
                         Err(e) => println!("Error posting answer: {}", e),
                     }
                 }
+                    }
             }
         }
 

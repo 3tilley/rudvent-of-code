@@ -117,6 +117,8 @@ impl<T, U: Output, V, W: Output, X: DayArguments, Z: Default> StructSolution<T, 
         let example_val: U = self.example_part_1.value();
         let res = if ans == example_val {
             Ok(ans)
+        } else if ans == U::default() {
+            Err(eyre!("Example didn't match, but example == {}. Did you update EXAMPLE_1_ANS?", ans))
         } else {
             Err(eyre!(
                 "Example 1 failed. Expected: {:?}, got: {:?}",
@@ -139,6 +141,8 @@ impl<T, U: Output, V, W: Output, X: DayArguments, Z: Default> StructSolution<T, 
         let example_val = self.example_part_2.value();
         let res = if ans == example_val {
             Ok(ans)
+        } else if ans == W::default() {
+            Err(eyre!("Example didn't match, but example == {}. Did you update EXAMPLE_2_ANS?", ans))
         } else {
             Err(eyre!(
                 "Example 2 failed. Expected: {:?}, got: {:?}",

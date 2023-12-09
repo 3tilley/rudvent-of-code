@@ -81,6 +81,8 @@ pub enum Commands {
         #[command(flatten)]
         part: Part,
         other_args: Vec<String>,
+        #[arg(short, long)]
+        no_post: bool,
     },
 }
 

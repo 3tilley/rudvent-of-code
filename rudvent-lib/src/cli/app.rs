@@ -1,11 +1,11 @@
 use crate::advent_interactions::DayData;
-use crate::cli::{Cli, Commands, };
+use crate::cli::new::NewInstructions;
+use crate::cli::solve::SolveInstructions;
+use crate::cli::{Cli, Commands};
 use crate::printer::Printer;
 use clap_verbosity_flag::Level;
 use color_eyre::eyre::Result;
 use std::path::PathBuf;
-use crate::cli::new::NewInstructions;
-use crate::cli::solve::SolveInstructions;
 
 use crate::types::SolutionBuilders;
 
@@ -70,6 +70,7 @@ impl App {
                 example,
                 part,
                 other_args,
+                no_post,
             } => {
                 let mut instructions = SolveInstructions {
                     day: *day,
@@ -78,6 +79,7 @@ impl App {
                     other_args: other_args.clone(),
                     solutions: self.solutions,
                     app: self,
+                    no_post: *no_post,
                 };
                 instructions.execute()?;
                 Ok(())
