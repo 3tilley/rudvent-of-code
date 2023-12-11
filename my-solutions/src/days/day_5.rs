@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::HashMap;
@@ -20,6 +21,7 @@ const EXAMPLE_2_ANS: OutputPart2 = 46;
 type UserParams = ();
 type UserMonitor = EmptyUserMonitor;
 
+#[derive(Clone)]
 struct RangeConverter {
     start: usize,
     end: usize,
@@ -36,6 +38,7 @@ impl RangeConverter {
     }
 }
 
+#[derive(Clone)]
 struct Map<T, V> {
     converters: Vec<RangeConverter>,
     _phantom: PhantomData<(T, V)>,
@@ -101,6 +104,7 @@ newtype!(Temperature);
 newtype!(Humidity);
 newtype!(Location);
 
+#[derive(Clone)]
 pub struct Almanac {
     seeds: Vec<Seed>,
     seed_soil: Map<Seed, Soil>,
@@ -196,7 +200,7 @@ pub fn prepare(input: String) -> InputPart1 {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<UserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     input
         .seeds
@@ -215,7 +219,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<UserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     input
         .seeds

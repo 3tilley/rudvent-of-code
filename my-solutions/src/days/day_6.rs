@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::str::FromStr;
@@ -71,7 +72,7 @@ fn num_possibles(t_t: f64, w_d: f64) -> usize {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<EmptyUserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     input
         .iter()
@@ -101,7 +102,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart2,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<EmptyUserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     num_possibles(input.time as f64, input.record_distance as f64)
 }

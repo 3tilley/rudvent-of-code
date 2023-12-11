@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::str::FromStr;
@@ -26,7 +27,7 @@ pub fn prepare(input: String) -> InputPart1 {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<UserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     input
         .iter()
@@ -53,7 +54,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart2,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<UserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     let swapped = input
         .replace("one", "one1one")

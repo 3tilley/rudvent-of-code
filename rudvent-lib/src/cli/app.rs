@@ -47,7 +47,7 @@ impl App {
                 day,
                 dry_run,
                 all_html,
-                part_1,
+                part,
             } => {
                 println!("Fetching description for day {}", day);
                 let day_data = DayData::new(
@@ -58,9 +58,9 @@ impl App {
                     self.auth_token.clone(),
                 );
                 if *all_html {
-                    Ok(println!("{}", day_data.html(*part_1, true, false)?))
+                    Ok(println!("{}", day_data.html(part.is_part_1(), true, false)?))
                 } else {
-                    let html = day_data.html(*part_1, false, false)?;
+                    let html = day_data.html(part.is_part_2(), false, false)?;
                     let pretty = html2text::from_read(html.as_bytes(), 80);
                     Ok(println!("{}", pretty))
                 }

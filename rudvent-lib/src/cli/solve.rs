@@ -1,6 +1,12 @@
+use std::thread::sleep;
+use std::time::Duration;
+use std::io::stdout;
 use tracing::{debug, info};
 use chrono::{DateTime, Local};
 use color_eyre::eyre::eyre;
+use crossterm::execute;
+use crossterm::style::{Print, PrintStyledContent, Color, Stylize};
+use crossterm::cursor::{SavePosition, RestorePosition};
 use crate::advent_interactions::ask_bool_input;
 use crate::cli::App;
 use crate::solution::{Solution, SolutionBuilder};
@@ -68,9 +74,16 @@ impl SolveInstructions<'_> {
             "Running part {} against full input",
             if self.part_1 { 1 } else { 2 }
         ));
-        let ex = solution.run(self.part_1);
-        ex.show_info(&self.app.printer);
-        let ans = ex.result().unwrap();
+        let mut ex = solution.run(self.part_1);
+        let ex_handle = ex.run();
+        while !ex_handle.is_finished() {
+            // execute!(stdout(), SavePosition, Print(ex.show_progress()), RestorePosition);
+            execute!(stdout(), SavePosition, PrintStyledContent(ex.show_progress().with(Color::Blue)), RestorePosition);
+            sleep(Duration::from_secs(1))
+        }
+        let ex_result = ex_handle.join().unwrap();
+        ex_result.show_info(&self.app.printer);
+        let ans = ex_result.result().unwrap();
         self.app.printer.print_or_info(&*format!("Answer: {}", ans));
         let posted = solution.day_data().check_for_posting(self.part_1)?;
         info!("Posted: {}", posted.is_some());

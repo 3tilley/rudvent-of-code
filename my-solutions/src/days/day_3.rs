@@ -3,6 +3,7 @@ use nom::bytes::complete::{tag, take};
 use nom::character::complete::digit1;
 use nom::multi::many1;
 use nom::{IResult, Parser};
+use std::sync::{Arc, Mutex};
 use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::{HashMap, HashSet};
@@ -30,7 +31,7 @@ struct Number {
     length: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Schematic {
     grid: Vec<Vec<char>>,
     numbers: Vec<Number>,
@@ -174,7 +175,7 @@ fn get_borders(
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<UserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     input
         .numbers
@@ -201,7 +202,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<UserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     // The HashMap type is <(gear_row, gear_col), (num_count, running_product)>
     let mut gear_map: HashMap<(usize, usize), (usize, usize)> =

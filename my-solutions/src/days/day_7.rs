@@ -1,5 +1,6 @@
 use rand::rngs::ThreadRng;
 use rand::Rng;
+use std::sync::{Arc, Mutex};
 use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::cell::Cell;
@@ -36,7 +37,7 @@ enum HandType {
     FiveOfAKind,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Hand {
     _hand_type: Cell<Option<HandType>>,
     cards: [u8; 5],
@@ -251,7 +252,7 @@ pub fn prepare(input: String) -> InputPart1 {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<EmptyUserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     input.sort();
     info!("{:?}", input);
@@ -320,7 +321,7 @@ fn check_part_2(input: &InputPart1) -> usize {
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<EmptyUserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     let errors = check_part_2(&input);
     println!("{} errors", errors);

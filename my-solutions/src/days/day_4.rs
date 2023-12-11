@@ -4,6 +4,7 @@ use nom::combinator::map_res;
 use nom::multi::many1;
 use nom::sequence::{preceded, separated_pair, Tuple};
 use nom::{AsChar, IResult, Parser};
+use std::sync::{Arc, Mutex};
 use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::HashSet;
@@ -16,7 +17,7 @@ type OutputPart1 = usize;
 type InputPart2 = InputPart1;
 type OutputPart2 = usize;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Card {
     my_numbers: HashSet<usize>,
     winning_numbers: HashSet<usize>,
@@ -84,7 +85,7 @@ pub fn prepare(input: String) -> InputPart1 {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<UserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     input.iter().map(|card| card.score()).sum()
 }
@@ -97,7 +98,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<UserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     let mut counts: Vec<usize> = vec![1; input.len()];
     input.iter().enumerate().for_each(|(i, card)| {

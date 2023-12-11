@@ -4,6 +4,7 @@ use nom::character::complete::u64 as nom64;
 use nom::multi::separated_list1;
 use nom::sequence::Tuple;
 use nom::{IResult, Parser};
+use std::sync::{Arc, Mutex};
 use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::cmp::max;
@@ -25,7 +26,7 @@ const EXAMPLE_2_ANS: OutputPart2 = 2286;
 type UserParams = ();
 type UserMonitor = EmptyUserMonitor;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Game {
     draws: Vec<Draw>,
 }
@@ -115,7 +116,7 @@ pub fn prepare(input: String) -> InputPart1 {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<UserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     let max_red = 12;
     let max_green = 13;
@@ -144,7 +145,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<UserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     input
         .iter()

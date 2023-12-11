@@ -69,8 +69,8 @@ pub enum Commands {
         dry_run: bool,
         #[arg(short, long)]
         all_html: bool,
-        #[arg(short, long)]
-        part_1: bool,
+        #[command(flatten)]
+        part: Part,
     },
     /// Run the problem code for one of the days
     #[clap(trailing_var_arg = true, allow_hyphen_values = true)]

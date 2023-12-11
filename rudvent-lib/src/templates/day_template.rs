@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use crate::solution::{SolutionBuilder, StructSolutionBuilder};
 use crate::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 
@@ -28,7 +29,7 @@ pub fn prepare(input: String) -> InputPart1 {
 pub fn part_1(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<EmptyUserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     todo!("Implement part 1")
 }
@@ -41,7 +42,7 @@ pub fn prepare_2(input: String) -> InputPart2 {
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
-    monitor: &mut RuntimeMonitor<EmptyUserMonitor>,
+    monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     todo!("Implement part 2")
 }
