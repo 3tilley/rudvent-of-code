@@ -26,7 +26,7 @@ pub static DAYS_ARRAY: SolutionBuilders = &[
     Some(day_6::make_sol), // Day 06
     Some(day_7::make_sol), // Day 07
     Some(day_8::make_sol), // Day 08
-    Some(day_9::make_sol),                  // Day 09
+    Some(day_9::make_sol), // Day 09
     None,                  // Day 10
     None,                  // Day 11
     None,                  // Day 12

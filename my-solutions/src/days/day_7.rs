@@ -1,6 +1,5 @@
 use rand::rngs::ThreadRng;
 use rand::Rng;
-use std::sync::{Arc, Mutex};
 use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::cell::Cell;
@@ -9,6 +8,7 @@ use std::collections::HashMap;
 use std::iter::Map;
 use std::slice::Iter;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 use tracing::{error, info};
 
 // Update these types to reflect the types you want to use to solve the problems. These
@@ -207,8 +207,7 @@ impl Hand {
 impl PartialEq<Self> for Hand {
     fn eq(&self, other: &Self) -> bool {
         if self.jokers {
-            (self.hand_type_jokers(), &self.cards)
-                == (other.hand_type_jokers(), &other.cards)
+            (self.hand_type_jokers(), &self.cards) == (other.hand_type_jokers(), &other.cards)
         } else {
             (self.hand_type(), self.cards) == (other.hand_type(), other.cards)
         }
@@ -369,6 +368,5 @@ mod tests {
         let other_4ok = Hand::from_str("QQQQ2 1", true);
         assert!(other_4ok > joker_4ok);
         assert_ne!(other_4ok, joker_4ok);
-
     }
 }

@@ -107,60 +107,57 @@ pub struct StructSolution<T, U, V, W, X, Z> {
 
 // U is is the result of part 1, W is the result of part 2. X is to differentiate between the
 // example and the main run if required
-impl<T:  'static, U: Output + 'static, V, W: Output, X: DayArguments + 'static, Z: Monitor + 'static> StructSolution<T, U, V, W, X, Z> {
-    pub fn check_example_1(&mut self) -> ThreadExecutionResult<U, Z> {
-        self.day_args.set_is_example(true);
-        let mut stack_info = Arc::new(Mutex::new(RuntimeMonitor::<Z>::new()));
-        let prep_start = Instant::now();
-        let input = (self.prepare_part_1)(self.day_data.example_1());
-        let prep_time = prep_start.elapsed();
-        let run_start = Instant::now();
-        let ans = (self.calc_part_1)(input, &self.day_args, stack_info.clone());
-        let calculation_time = run_start.elapsed();
-        let example_val: U = self.example_part_1.value();
-        let res = if ans == example_val {
-            Ok(ans)
-        } else if ans == U::default() {
-            Err(eyre!("Example didn't match, but example == {}. Did you update EXAMPLE_1_ANS?", ans))
-        } else {
-            Err(eyre!(
-                "Example 1 failed. Expected: {:?}, got: {:?}",
-                example_val,
-                ans
-            ))
-        };
-        let ex = ThreadExecutionResult::new(res, stack_info.into(), chrono::Duration::from_std(calculation_time).unwrap(), chrono::Duration::from_std(prep_time + calculation_time).unwrap());
-        ex
-    }
-
-    // pub fn check_example_2(&mut self) -> Execution<W, Z> {
+impl<T:  'static, U: Output + 'static, V: 'static, W: Output + 'static, X: DayArguments + 'static, Z: Monitor + 'static> StructSolution<T, U, V, W, X, Z> {
+    // pub fn check_example_1(&mut self) -> ThreadExecutionResult<U, Z> {
     //     self.day_args.set_is_example(true);
-    //     let prep_start = Utc::now();
-    //     let mut stack_info = RuntimeMonitor::<Z>::new();
-    //     let input = (self.prepare_part_2)(self.day_data.example_2());
-    //     let run_start = Utc::now();
-    //     let ans = (self.calc_part_2)(input, &self.day_args, &mut stack_info);
-    //     let run_end = Utc::now();
-    //     let example_val = self.example_part_2.value();
+    //     let mut stack_info = Arc::new(Mutex::new(RuntimeMonitor::<Z>::new()));
+    //     let prep_start = Instant::now();
+    //     let input = (self.prepare_part_1)(self.day_data.example_1());
+    //     let prep_time = prep_start.elapsed();
+    //     let run_start = Instant::now();
+    //     let ans = (self.calc_part_1)(input, &self.day_args, stack_info.clone());
+    //     let calculation_time = run_start.elapsed();
+    //     let example_val: U = self.example_part_1.value();
     //     let res = if ans == example_val {
     //         Ok(ans)
-    //     } else if ans == W::default() {
-    //         Err(eyre!("Example didn't match, but example == {}. Did you update EXAMPLE_2_ANS?", ans))
+    //     } else if ans == U::default() {
+    //         Err(eyre!("Example didn't match, but example == {}. Did you update EXAMPLE_1_ANS?", ans))
     //     } else {
     //         Err(eyre!(
-    //             "Example 2 failed. Expected: {:?}, got: {:?}",
+    //             "Example 1 failed. Expected: {:?}, got: {:?}",
     //             example_val,
     //             ans
     //         ))
     //     };
-    //     let ex = Execution::new(res, prep_start, run_start, run_end, stack_info);
+    //     let ex = ThreadExecutionResult::new(res, stack_info.into(), chrono::Duration::from_std(calculation_time).unwrap(), chrono::Duration::from_std(prep_time + calculation_time).unwrap());
     //     ex
     // }
+
+    pub fn check_example_1(&mut self) -> Box<dyn ExecutionResult> {
+        let input = self.day_data.example_1();
+        let mut execution = ThreadedExecution::new(input, self.prepare_part_1, self.calc_part_1, Some(self.example_part_1.value()));
+        execution.run().join().unwrap()
+    }
+
+    pub fn check_example_2(&mut self) -> Box<dyn ExecutionResult> {
+        let input = self.day_data.example_2();
+        let mut execution = ThreadedExecution::new(input, self.prepare_part_2, self.calc_part_2, Some(self.example_part_2.value()));
+        execution.run().join().unwrap()
+
+    }
     pub fn run_part_1(&mut self) -> ThreadedExecution<T, U, X, Z> {
         self.day_args.set_is_example(false);
         let input = self.day_data.input_1();
 
-        let mut execution = ThreadedExecution::new(input, self.prepare_part_1, self.calc_part_1);
+        let mut execution = ThreadedExecution::new(input, self.prepare_part_1, self.calc_part_1, None);
+
+        execution
+    }
+    pub fn run_part_2(&mut self) -> ThreadedExecution<V, W, X, Z> {
+        self.day_args.set_is_example(false);
+        let input = self.day_data.input_2();
+
+        let mut execution = ThreadedExecution::new(input, self.prepare_part_2, self.calc_part_2, None);
 
         execution
     }
@@ -187,14 +184,13 @@ pub trait Solution {
 
 }
 
-impl<T: 'static, U: Output + 'static, V, W: Output + 'static, X: DayArguments + 'static, Z: Monitor + 'static> Solution for StructSolution<T, U, V, W, X, Z> {
+impl<T: 'static, U: Output + 'static, V: 'static, W: Output + 'static, X: DayArguments + 'static, Z: Monitor + 'static> Solution for StructSolution<T, U, V, W, X, Z> {
     fn run(&mut self, part_1: bool) -> Box<dyn Execution> {
-        // if part_1 {
-        //     Box::new(self.run_part_1())
-        // } else {
-        //     Box::new(self.run_part_2())
-        // }
-        Box::new(self.run_part_1())
+        if part_1 {
+            Box::new(self.run_part_1())
+        } else {
+            Box::new(self.run_part_2())
+        }
     }
 
     fn check_example_and_continue(&mut self, printer: &Printer, part_1: bool) -> bool {
@@ -203,13 +199,13 @@ impl<T: 'static, U: Output + 'static, V, W: Output + 'static, X: DayArguments + 
         if part_1 {
             let ex = self.check_example_1();
             ex.show_info(printer);
-            let ans = ex.result;
+            let ans = ex.result();
             printer.success(&format!("Example matches: {}", ans.unwrap()));
         } else {
             // TODO: Revert this
-            let ex = self.check_example_1();
+            let ex = self.check_example_2();
             ex.show_info(printer);
-            let ans = ex.result;
+            let ans = ex.result();
             printer.success(&format!("Example matches: {}", ans.unwrap()));
         };
         ask_bool_input("Run the full input set?", true)

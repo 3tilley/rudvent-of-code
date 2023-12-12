@@ -3,11 +3,11 @@ use nom::bytes::complete::{tag, take};
 use nom::character::complete::digit1;
 use nom::multi::many1;
 use nom::{IResult, Parser};
-use std::sync::{Arc, Mutex};
 use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types

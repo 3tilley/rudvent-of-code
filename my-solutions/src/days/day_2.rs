@@ -4,11 +4,11 @@ use nom::character::complete::u64 as nom64;
 use nom::multi::separated_list1;
 use nom::sequence::Tuple;
 use nom::{IResult, Parser};
-use std::sync::{Arc, Mutex};
 use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::cmp::max;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 use tracing::{info, info_span};
 
 // Update these types to reflect the types you want to use to solve the problems. These

@@ -119,6 +119,7 @@ pub struct ThreadedExecution<T, U: Output, X, Z> {
     input: String,
     prep_function: fn(String) -> T,
     run_function: fn(T, &RunParams<X>, Arc<Mutex<RuntimeMonitor<Z>>>) -> U,
+    example_check: Option<U>,
 }
 
 impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 'static> Execution for ThreadedExecution<T, U, X, Z> {
@@ -149,7 +150,7 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
 }
 
 impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 'static> ThreadedExecution<T, U, X, Z> {
-    pub fn new(input: String, prep_function: fn(String) -> T, run_function: fn(T, &RunParams<X>, Arc<Mutex<RuntimeMonitor<Z>>>) -> U) -> Self {
+    pub fn new(input: String, prep_function: fn(String) -> T, run_function: fn(T, &RunParams<X>, Arc<Mutex<RuntimeMonitor<Z>>>) -> U, example_check: Option<U>) -> Self {
         Self {
             is_complete: false,
             run_start: None,
@@ -158,6 +159,7 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
             input,
             run_function,
             prep_function,
+            example_check,
         }
     }
 
@@ -166,18 +168,35 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
         let prep_func = self.prep_function.clone();
         let run_func = self.run_function.clone();
         let monitor = self.runtime_monitor.clone();
+        let example_check = self.example_check.clone();
         self.run_start = Some(Instant::now());
         thread::spawn(move || {
             let prep_start = Instant::now();
             let prep = (prep_func)(input);
             let prep_time = chrono::Duration::from_std(prep_start.elapsed()).unwrap();
             let mut run_params = RunParams::default();
-            run_params.set_is_example(false);
+            run_params.set_is_example(example_check.is_some());
             let run_start = Instant::now();
             let result = (run_func)(prep, &run_params, monitor.clone());
             let calculation_duration = Duration::from_std(run_start.elapsed()).unwrap();
+            let res = match example_check {
+                None => Ok(result),
+                Some(example) => {
+                    if result == example {
+                        Ok(result)
+                    } else if result == U::default() {
+                        Err(eyre!("Example didn't match, but example == {}. Did you update EXAMPLE_1_ANS?", example))
+                    } else {
+                        Err(eyre!(
+                            "Example 1 failed. Expected: {:?}, got: {:?}",
+                            example,
+                            result
+                        ))
+                    }
+                }
+            };
             Box::new(ThreadExecutionResult{
-                result: Ok(result),
+                result: res,
                 runtime_monitor: monitor,
                 calculation_duration,
                 total_duration: prep_time + calculation_duration,

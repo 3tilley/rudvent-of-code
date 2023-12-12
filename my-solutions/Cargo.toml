@@ -12,4 +12,5 @@ tracing = "0.1.40"
 log = "0.4.20"
 array2d = "0.3.0"
 rand = "0.8.5"
+num-traits = "0.2.15"
 
