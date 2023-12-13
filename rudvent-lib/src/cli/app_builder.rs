@@ -8,7 +8,6 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::info;
-use tracing::level_filters::LevelFilter;
 
 pub struct AppBuilder {
     pub project_root: Option<PathBuf>,

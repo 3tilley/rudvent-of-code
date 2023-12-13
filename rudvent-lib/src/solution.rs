@@ -9,6 +9,7 @@ use color_eyre::eyre::eyre;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
+use color_eyre::owo_colors::OwoColorize;
 use execution::{DayArguments, Example, Execution, RunParams};
 use crate::solution::execution::{ExecutionResult, Monitor, RuntimeMonitor, ThreadedExecution, ThreadExecutionResult};
 
@@ -43,8 +44,9 @@ impl<
     fn build(&self, app: &App, day: u8, cli_params: Vec<String>) -> Box<dyn Solution> {
         let day_args = RunParams {
             is_example: false,
-            user_params: X::default(),
+            user_params: X::parse_from(std::iter::once("dummy_name".to_string()).chain(cli_params)),
         };
+        println!("{:?}", day_args);
         let day_data = DayData::new(
             app.year,
             day,
@@ -135,13 +137,13 @@ impl<T:  'static, U: Output + 'static, V: 'static, W: Output + 'static, X: DayAr
 
     pub fn check_example_1(&mut self) -> Box<dyn ExecutionResult> {
         let input = self.day_data.example_1();
-        let mut execution = ThreadedExecution::new(input, self.prepare_part_1, self.calc_part_1, Some(self.example_part_1.value()));
+        let mut execution = ThreadedExecution::new(input, self.prepare_part_1, self.calc_part_1, Some(self.example_part_1.value()), self.day_args.clone());
         execution.run().join().unwrap()
     }
 
     pub fn check_example_2(&mut self) -> Box<dyn ExecutionResult> {
         let input = self.day_data.example_2();
-        let mut execution = ThreadedExecution::new(input, self.prepare_part_2, self.calc_part_2, Some(self.example_part_2.value()));
+        let mut execution = ThreadedExecution::new(input, self.prepare_part_2, self.calc_part_2, Some(self.example_part_2.value()), self.day_args.clone());
         execution.run().join().unwrap()
 
     }
@@ -149,7 +151,7 @@ impl<T:  'static, U: Output + 'static, V: 'static, W: Output + 'static, X: DayAr
         self.day_args.set_is_example(false);
         let input = self.day_data.input_1();
 
-        let mut execution = ThreadedExecution::new(input, self.prepare_part_1, self.calc_part_1, None);
+        let mut execution = ThreadedExecution::new(input, self.prepare_part_1, self.calc_part_1, None, self.day_args.clone());
 
         execution
     }
@@ -157,7 +159,7 @@ impl<T:  'static, U: Output + 'static, V: 'static, W: Output + 'static, X: DayAr
         self.day_args.set_is_example(false);
         let input = self.day_data.input_2();
 
-        let mut execution = ThreadedExecution::new(input, self.prepare_part_2, self.calc_part_2, None);
+        let mut execution = ThreadedExecution::new(input, self.prepare_part_2, self.calc_part_2, None, self.day_args.clone());
 
         execution
     }

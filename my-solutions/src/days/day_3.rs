@@ -3,7 +3,7 @@ use nom::bytes::complete::{tag, take};
 use nom::character::complete::digit1;
 use nom::multi::many1;
 use nom::{IResult, Parser};
-use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
@@ -21,7 +21,7 @@ const EXAMPLE_1_ANS: OutputPart1 = 4361;
 const EXAMPLE_2_ANS: OutputPart2 = 467835;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
-type UserParams = ();
+type UserParams = EmptyUserParams;
 type UserMonitor = EmptyUserMonitor;
 
 #[derive(Debug, Copy, Clone)]

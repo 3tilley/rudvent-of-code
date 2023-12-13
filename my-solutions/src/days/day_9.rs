@@ -1,5 +1,5 @@
 use num_traits::Zero;
-use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::fmt::format;
 use std::ops::BitOr;
@@ -20,7 +20,7 @@ const EXAMPLE_1_ANS: OutputPart1 = 114;
 const EXAMPLE_2_ANS: OutputPart2 = 2;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
-type UserParams = ();
+type UserParams = EmptyUserParams;
 type UserMonitor = EmptyUserMonitor;
 
 // This function is called to prepare the input for part 1

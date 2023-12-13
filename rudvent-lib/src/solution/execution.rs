@@ -5,6 +5,7 @@ use std::thread;
 use std::thread::JoinHandle;
 use std::time::Instant;
 use chrono_humanize::{Accuracy, HumanTime, Tense};
+use clap::Parser;
 use color_eyre::eyre::eyre;
 use crate::printer::Printer;
 use crate::types::Output;
@@ -114,7 +115,7 @@ pub struct ThreadedExecution<T, U: Output, X, Z> {
     run_start: Option<Instant>,
     // pub run_start: DateTime<Utc>,
     // pub run_end: DateTime<Utc>,
-    // run_params: RunParams<X>,
+    run_params: RunParams<X>,
     runtime_monitor: Arc<Mutex<RuntimeMonitor<Z>>>,
     input: String,
     prep_function: fn(String) -> T,
@@ -150,11 +151,11 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
 }
 
 impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 'static> ThreadedExecution<T, U, X, Z> {
-    pub fn new(input: String, prep_function: fn(String) -> T, run_function: fn(T, &RunParams<X>, Arc<Mutex<RuntimeMonitor<Z>>>) -> U, example_check: Option<U>) -> Self {
+    pub fn new(input: String, prep_function: fn(String) -> T, run_function: fn(T, &RunParams<X>, Arc<Mutex<RuntimeMonitor<Z>>>) -> U, example_check: Option<U>, run_params: RunParams<X>) -> Self {
         Self {
             is_complete: false,
             run_start: None,
-            // run_params: RunParams::default(),
+            run_params,
             runtime_monitor: Arc::new(Mutex::new(RuntimeMonitor::new())),
             input,
             run_function,
@@ -169,12 +170,12 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
         let run_func = self.run_function.clone();
         let monitor = self.runtime_monitor.clone();
         let example_check = self.example_check.clone();
+        let mut run_params = self.run_params.clone();
         self.run_start = Some(Instant::now());
         thread::spawn(move || {
             let prep_start = Instant::now();
             let prep = (prep_func)(input);
             let prep_time = chrono::Duration::from_std(prep_start.elapsed()).unwrap();
-            let mut run_params = RunParams::default();
             run_params.set_is_example(example_check.is_some());
             let run_start = Instant::now();
             let result = (run_func)(prep, &run_params, monitor.clone());
@@ -212,14 +213,14 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
 //     fn from_cli_params(cli_params: Vec<String>) -> Self;
 // }
 //
-pub trait DayArguments: Clone + Debug + Default {}
+pub trait DayArguments: Clone + Debug + Default + Parser + Send {}
 
-impl<T> DayArguments for T where T: Clone + Debug + Default {}
+impl<T> DayArguments for T where T: Clone + Debug + Default + Parser + Send {}
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct RunParams<T> {
-    pub(crate) is_example: bool,
-    pub(crate) user_params: T,
+    pub is_example: bool,
+    pub user_params: T,
 }
 
 impl<T> RunParams<T> {
@@ -228,3 +229,7 @@ impl<T> RunParams<T> {
     }
 }
 
+#[derive(Parser, Clone, Debug, Default)]
+pub struct EmptyUserParams {
+
+}

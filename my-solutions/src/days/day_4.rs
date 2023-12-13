@@ -4,7 +4,7 @@ use nom::combinator::map_res;
 use nom::multi::many1;
 use nom::sequence::{preceded, separated_pair, Tuple};
 use nom::{AsChar, IResult, Parser};
-use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::HashSet;
 use std::str::FromStr;
@@ -70,7 +70,7 @@ const EXAMPLE_1_ANS: OutputPart1 = 13;
 const EXAMPLE_2_ANS: OutputPart2 = 30;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
-type UserParams = ();
+type UserParams = EmptyUserParams;
 type UserMonitor = EmptyUserMonitor;
 
 // This function is called to prepare the input for part 1

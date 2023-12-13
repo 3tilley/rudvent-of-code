@@ -1,4 +1,4 @@
-use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -18,7 +18,7 @@ const EXAMPLE_1_ANS: OutputPart1 = 35;
 const EXAMPLE_2_ANS: OutputPart2 = 46;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
-type UserParams = ();
+type UserParams = EmptyUserParams;
 type UserMonitor = EmptyUserMonitor;
 
 #[derive(Clone)]

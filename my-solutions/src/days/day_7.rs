@@ -1,6 +1,6 @@
 use rand::rngs::ThreadRng;
 use rand::Rng;
-use rudvent_lib::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
 use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::cell::Cell;
 use std::cmp::Ordering;
@@ -23,7 +23,7 @@ const EXAMPLE_1_ANS: OutputPart1 = 6440;
 const EXAMPLE_2_ANS: OutputPart2 = 5905;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
-type UserParams = ();
+type UserParams = EmptyUserParams;
 type UserMonitor = EmptyUserMonitor;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Copy, Debug)]

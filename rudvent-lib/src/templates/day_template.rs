@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use crate::solution::{SolutionBuilder, StructSolutionBuilder};
-use crate::solution::execution::{EmptyUserMonitor, Example, RunParams, RuntimeMonitor};
+use crate::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -14,7 +14,7 @@ const EXAMPLE_1_ANS: OutputPart1 = 0;
 const EXAMPLE_2_ANS: OutputPart2 = 0;
 
 // This currently only the information about whether the run is an example or not. It may be augmented
-type UserParams = ();
+type UserParams = EmptyUserParams;
 type UserMonitor = EmptyUserMonitor;
 
 // This function is called to prepare the input for part 1
