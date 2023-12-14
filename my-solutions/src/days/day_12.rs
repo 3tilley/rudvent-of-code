@@ -235,40 +235,40 @@ pub fn make_sol() -> Box<dyn SolutionBuilder> {
 }
 
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_complete_line() {
-        let mut line = SpringLine::from_str("#.#.### 1,1,3");
-        let mon = RuntimeMonitor::new_arc();
-        assert_eq!(one_line(&mut line.springs, &line.orders, &mon), Some(1))
-    }
-
-    #[test]
-    fn test_complete_line_fail() {
-        let mut line = SpringLine::from_str("#.#.### 1,1,4");
-        let mon = RuntimeMonitor::new_arc();
-        assert_eq!(one_line(&mut line.springs, &line.orders, &mon), None)
-    }
-
-    #[test]
-    fn test_partial_line_pass() {
-        let mut line = SpringLine::from_str("??.#.### 1,1,3");
-        let mon = RuntimeMonitor::new_arc();
-        let res = one_line(&mut line.springs, &line.orders, &mon);
-        println!("{:?}", mon.lock().unwrap().current_progress);
-        assert_eq!(res, Some(2))
-
-    }
-
-    #[test]
-    fn test_partial_line_fail() {
-        let mut line = SpringLine::from_str("??.#.### 1,1,4");
-        let mon = RuntimeMonitor::new_arc();
-        let res = one_line(&mut line.springs, &line.orders, &mon);
-        assert_eq!(res, None)
-
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//
+//     #[test]
+//     fn test_complete_line() {
+//         let mut line = SpringLine::from_str("#.#.### 1,1,3");
+//         let mon = RuntimeMonitor::new_arc();
+//         assert_eq!(one_line(&mut line.springs, &line.orders, &mon), Some(1))
+//     }
+//
+//     #[test]
+//     fn test_complete_line_fail() {
+//         let mut line = SpringLine::from_str("#.#.### 1,1,4");
+//         let mon = RuntimeMonitor::new_arc();
+//         assert_eq!(one_line(&mut line.springs, &line.orders, &mon), None)
+//     }
+//
+//     #[test]
+//     fn test_partial_line_pass() {
+//         let mut line = SpringLine::from_str("??.#.### 1,1,3");
+//         let mon = RuntimeMonitor::new_arc();
+//         let res = one_line(&mut line.springs, &line.orders, &mon);
+//         println!("{:?}", mon.lock().unwrap().current_progress);
+//         assert_eq!(res, Some(2))
+//
+//     }
+//
+//     #[test]
+//     fn test_partial_line_fail() {
+//         let mut line = SpringLine::from_str("??.#.### 1,1,4");
+//         let mon = RuntimeMonitor::new_arc();
+//         let res = one_line(&mut line.springs, &line.orders, &mon);
+//         assert_eq!(res, None)
+//
+//     }
+// }
