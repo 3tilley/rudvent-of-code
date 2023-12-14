@@ -41,7 +41,7 @@ fn reflections_for_block(block: &Array2D<bool>) -> usize {
         // For the rows moving upwards we actually start with the row below current, as the first step is an offset
         let mut prev_row = row + 1;
         let mut post_row = row;
-        while let (Some(row_a), Some(row_b)) = (block.offset_row(prev_row, -1), block.offset_row(row, 1)) {
+        while let (Some(row_a), Some(row_b)) = (block.offset_row(prev_row, -1), block.offset_row(post_row, 1)) {
             found = rows[row_a] == rows[row_b];
             prev_row = row_a;
             post_row = row_b;
@@ -56,7 +56,7 @@ fn reflections_for_block(block: &Array2D<bool>) -> usize {
     for col in 1..cols.len() {
         let mut prev_col = col + 1;
         let mut post_col = col;
-        while let (Some(col_a), Some(col_b)) = (block.offset_col(prev_col, -1), block.offset_col(col, 1)) {
+        while let (Some(col_a), Some(col_b)) = (block.offset_col(prev_col, -1), block.offset_col(post_col, 1)) {
             info!("Checking col: {} and col: {}", col_a, col_b);
             info!("col_a: {}, {:?}", col_a, cols[col_a]);
             info!("col_b: {}, {:?}", col_b, cols[col_b]);
