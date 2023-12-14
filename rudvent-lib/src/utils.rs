@@ -1,5 +1,6 @@
 use chrono::{DateTime, FixedOffset, TimeZone, Utc};
 use std::path::{Component, Path, PathBuf};
+use humansize::{DECIMAL, FormatSizeOptions, make_format, make_format_i, ToF64, Unsigned};
 
 pub fn title_case(s: &str) -> String {
     s.split_whitespace()
@@ -47,6 +48,16 @@ pub fn pathbuf_to_import_string(path: &Path, final_component: Option<&str>) -> S
     }
     let output = output.join("::");
     output.replace(".rs", "")
+}
+
+pub fn unitless_formatter<T: ToF64 + Unsigned>(value: T) -> String {
+    let custom_options = FormatSizeOptions::from(DECIMAL).space_after_value(true);
+    make_format(custom_options)(value).replace("B", "")
+}
+
+pub fn unitless_formatter_i<T: ToF64>(value: T) -> String {
+    let custom_options = FormatSizeOptions::from(DECIMAL).space_after_value(true);
+    make_format_i(custom_options)(value).replace("B", "")
 }
 
 // Write some tests

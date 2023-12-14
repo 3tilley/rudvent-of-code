@@ -10,19 +10,20 @@ use color_eyre::eyre::eyre;
 use crate::printer::Printer;
 use crate::types::Output;
 use color_eyre::Result;
+use crate::utils::{unitless_formatter, unitless_formatter_i};
 
 pub trait Monitor: Default + Clone + Debug + Send + Sync {
 
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct RuntimeMonitor<T> {
     pub total_progress: usize,
     pub current_progress: usize,
     pub user_monitor: T,
 }
 
-impl<T: Default> RuntimeMonitor<T> {
+impl<T: Monitor> RuntimeMonitor<T> {
     pub fn new() -> RuntimeMonitor<T> {
         RuntimeMonitor {
             total_progress: 0,
@@ -31,8 +32,18 @@ impl<T: Default> RuntimeMonitor<T> {
         }
     }
 
+    pub fn cycles(&self, elapsed: chrono::Duration) -> String {
+        if self.current_progress != 0 {
+            format!("\n{} iterations. {} cycles per second", unitless_formatter(self.current_progress as u64), unitless_formatter_i((self.current_progress as f32) * 1_000_000.0  / (elapsed.num_microseconds().unwrap() as f32)))
+        } else { "".to_string() }
+    }
+
     pub fn show_progress(printer: &Printer) {
 
+    }
+
+    pub fn new_arc() -> Arc<Mutex<RuntimeMonitor<T>>> {
+        Arc::new(Mutex::new(RuntimeMonitor::new()))
     }
 }
 
@@ -91,11 +102,13 @@ impl<T: Output, V: Monitor> ExecutionResult for ThreadExecutionResult<T, V> {
             / (self.total_duration.num_nanoseconds().unwrap() as f32);
         let hc = HumanTime::from(self.calculation_duration);
         let tc = HumanTime::from(self.total_duration);
+        let cycles = self.runtime_monitor.lock().unwrap().cycles(self.calculation_duration);
         printer.print_or_info(&*format!(
-            "Completed part in {}.  Calculation time: {} ({:.1}%)",
+            "Completed part in {}.  Calculation time: {} ({:.1}%)\n{}",
             tc.to_text_en(Accuracy::Precise, Tense::Present),
             hc.to_text_en(Accuracy::Precise, Tense::Present),
-            calc_frac * 100.0
+            calc_frac * 100.0,
+            cycles
         ));
     }
 
@@ -130,10 +143,7 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
             Some(start_time) => {
 
                 let elapsed = chrono::Duration::from_std(start_time.elapsed()).unwrap();
-                let progress = self.runtime_monitor.lock().unwrap().current_progress;
-                let cycles = if progress != 0 {
-                    format!("\n{} iterations. {} cycles per second", progress, (progress as f32) * 1_000_000.0  / (elapsed.num_microseconds().unwrap() as f32))
-                } else { "".to_string() };
+                let cycles = self.runtime_monitor.lock().unwrap().cycles(elapsed);
                 format!("Elapsed: {}{}", HumanTime::from(elapsed), cycles)
             }
         }
@@ -227,6 +237,7 @@ impl<T> RunParams<T> {
     pub fn set_is_example(&mut self, is_example: bool) {
         self.is_example = is_example
     }
+
 }
 
 #[derive(Parser, Clone, Debug, Default)]

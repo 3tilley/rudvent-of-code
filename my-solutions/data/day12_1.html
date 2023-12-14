@@ -87,10 +87,10 @@ If you'd like to hang out, I'm @ericwastl@hachyderm.io on Mastodon and
 
 -->
 <body>
-<header><div><h1 class="title-global"><a href="/">Advent of Code</a></h1><nav><ul><li><a href="/2023/about">[About]</a></li><li><a href="/2023/events">[Events]</a></li><li><a href="https://teespring.com/stores/advent-of-code" target="_blank">[Shop]</a></li><li><a href="/2023/settings">[Settings]</a></li><li><a href="/2023/auth/logout">[Log Out]</a></li></ul></nav><div class="user">3tilley <span class="star-count">18*</span></div></div><div><h1 class="title-event">&nbsp;&nbsp;&nbsp;<span class="title-event-wrap">int y=</span><a href="/2023">2023</a><span class="title-event-wrap">;</span></h1><nav><ul><li><a href="/2023">[Calendar]</a></li><li><a href="/2023/support">[AoC++]</a></li><li><a href="/2023/sponsors">[Sponsors]</a></li><li><a href="/2023/leaderboard">[Leaderboard]</a></li><li><a href="/2023/stats">[Stats]</a></li></ul></nav></div></header>
+<header><div><h1 class="title-global"><a href="/">Advent of Code</a></h1><nav><ul><li><a href="/2023/about">[About]</a></li><li><a href="/2023/events">[Events]</a></li><li><a href="https://teespring.com/stores/advent-of-code" target="_blank">[Shop]</a></li><li><a href="/2023/settings">[Settings]</a></li><li><a href="/2023/auth/logout">[Log Out]</a></li></ul></nav><div class="user">3tilley <span class="star-count">19*</span></div></div><div><h1 class="title-event">&nbsp;&nbsp;<span class="title-event-wrap">0.0.0.0:</span><a href="/2023">2023</a><span class="title-event-wrap"></span></h1><nav><ul><li><a href="/2023">[Calendar]</a></li><li><a href="/2023/support">[AoC++]</a></li><li><a href="/2023/sponsors">[Sponsors]</a></li><li><a href="/2023/leaderboard">[Leaderboard]</a></li><li><a href="/2023/stats">[Stats]</a></li></ul></nav></div></header>
 
 <div id="sidebar">
-<div id="sponsor"><div class="quiet">Our <a href="/2023/sponsors">sponsors</a> help make Advent of Code possible:</div><div class="sponsor"><a href="https://jobs.bestbuy.com/bby?id=career_area&amp;content=technology&amp;career_site=Digital%20and%20Technology,Data%20and%20Analytics&amp;spa=1&amp;s=req_id_num" target="_blank" onclick="if(ga)ga('send','event','sponsor','sidebar',this.href);" rel="noopener">Best Buy</a> - Our purpose is to enrich lives through technology. Join us!</div></div>
+<div id="sponsor"><div class="quiet">Our <a href="/2023/sponsors">sponsors</a> help make Advent of Code possible:</div><div class="sponsor"><a href="https://www.costperform.com" target="_blank" onclick="if(ga)ga('send','event','sponsor','sidebar',this.href);" rel="noopener">CostPerform</a> - Cracking codes + solving puzzles == fun == CostPerform</div></div>
 </div><!--/sidebar-->
 
 <main>
@@ -149,11 +149,32 @@ If you'd like to hang out, I'm @ericwastl@hachyderm.io on Mastodon and
 <p>Adding all of the possible arrangement counts together produces a total of <code><em>21</em></code> arrangements.</p>
 <p>For each row, count all of the different arrangements of operational and broken springs that meet the given criteria. <em>What is the sum of those counts?</em></p>
 </article>
-<p>To begin, <a href="12/input" target="_blank">get your puzzle input</a>.</p>
-<form method="post" action="12/answer"><input type="hidden" name="level" value="1"/><p>Answer: <input type="text" name="answer" autocomplete="off"/> <input type="submit" value="[Submit]"/></p></form>
+<p>Your puzzle answer was <code>7599</code>.</p><p class="day-success">The first half of this puzzle is complete! It provides one gold star: *</p>
+<article class="day-desc"><h2 id="part2">--- Part Two ---</h2><p>As you look out at the field of springs, you feel like there are way more springs than the condition records list. When you examine the records, you discover that they were actually <em>folded up</em> this whole time!</p>
+<p>To <em>unfold the records</em>, on each row, replace the list of spring conditions with five copies of itself (separated by <code>?</code>) and replace the list of contiguous groups of damaged springs with five copies of itself (separated by <code>,</code>).</p>
+<p>So, this row:</p>
+<pre><code>.# 1</code></pre>
+<p>Would become:</p>
+<pre><code>.#?.#?.#?.#?.# 1,1,1,1,1</code></pre>
+<p>The first line of the above example would become:</p>
+<pre><code>???.###????.###????.###????.###????.### 1,1,3,1,1,3,1,1,3,1,1,3,1,1,3</code></pre>
+<p>In the above example, after unfolding, the number of possible arrangements for some rows is now much larger:</p>
+<ul>
+<li><code>???.### 1,1,3</code> - <code><em>1</em></code> arrangement</li>
+<li><code>.??..??...?##. 1,1,3</code> - <code><em>16384</em></code> arrangements</li>
+<li><code>?#?#?#?#?#?#?#? 1,3,1,6</code> - <code><em>1</em></code> arrangement</li>
+<li><code>????.#...#... 4,1,1</code> - <code><em>16</em></code> arrangements</li>
+<li><code>????.######..#####. 1,6,5</code> - <code><em>2500</em></code> arrangements</li>
+<li><code>?###???????? 3,2,1</code> - <code><em>506250</em></code> arrangements</li>
+</ul>
+<p>After unfolding, adding all of the possible arrangement counts together produces <code><em>525152</em></code>.</p>
+<p>Unfold your condition records; <em>what is the new sum of possible arrangement counts?</em></p>
+</article>
+<form method="post" action="12/answer"><input type="hidden" name="level" value="2"/><p>Answer: <input type="text" name="answer" autocomplete="off"/> <input type="submit" value="[Submit]"/></p></form>
+<p>Although it hasn't changed, you can still <a href="12/input" target="_blank">get your puzzle input</a>.</p>
 <p>You can also <span class="share">[Share<span class="share-content">on
-  <a href="https://twitter.com/intent/tweet?text=%22Hot+Springs%22+%2D+Day+12+%2D+Advent+of+Code+2023&amp;url=https%3A%2F%2Fadventofcode%2Ecom%2F2023%2Fday%2F12&amp;related=ericwastl&amp;hashtags=AdventOfCode" target="_blank">Twitter</a>
-  <a href="javascript:void(0);" onclick="var ms; try{ms=localStorage.getItem('mastodon.server')}finally{} if(typeof ms!=='string')ms=''; ms=prompt('Mastodon Server?',ms); if(typeof ms==='string' && ms.length){this.href='https://'+ms+'/share?text=%22Hot+Springs%22+%2D+Day+12+%2D+Advent+of+Code+2023+%23AdventOfCode+https%3A%2F%2Fadventofcode%2Ecom%2F2023%2Fday%2F12';try{localStorage.setItem('mastodon.server',ms);}finally{}}else{return false;}" target="_blank">Mastodon</a
+  <a href="https://twitter.com/intent/tweet?text=I%27ve+completed+Part+One+of+%22Hot+Springs%22+%2D+Day+12+%2D+Advent+of+Code+2023&amp;url=https%3A%2F%2Fadventofcode%2Ecom%2F2023%2Fday%2F12&amp;related=ericwastl&amp;hashtags=AdventOfCode" target="_blank">Twitter</a>
+  <a href="javascript:void(0);" onclick="var ms; try{ms=localStorage.getItem('mastodon.server')}finally{} if(typeof ms!=='string')ms=''; ms=prompt('Mastodon Server?',ms); if(typeof ms==='string' && ms.length){this.href='https://'+ms+'/share?text=I%27ve+completed+Part+One+of+%22Hot+Springs%22+%2D+Day+12+%2D+Advent+of+Code+2023+%23AdventOfCode+https%3A%2F%2Fadventofcode%2Ecom%2F2023%2Fday%2F12';try{localStorage.setItem('mastodon.server',ms);}finally{}}else{return false;}" target="_blank">Mastodon</a
 ></span>]</span> this puzzle.</p>
 </main>
 

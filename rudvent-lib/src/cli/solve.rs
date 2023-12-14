@@ -4,9 +4,10 @@ use std::io::stdout;
 use tracing::{debug, info};
 use chrono::{DateTime, Local};
 use color_eyre::eyre::eyre;
-use crossterm::execute;
+use crossterm::{ExecutableCommand, execute};
 use crossterm::style::{Print, PrintStyledContent, Color, Stylize};
 use crossterm::cursor::{SavePosition, RestorePosition};
+use crossterm::terminal::{ScrollDown, ScrollUp};
 use crate::advent_interactions::ask_bool_input;
 use crate::cli::App;
 use crate::solution::{Solution, SolutionBuilder};
@@ -76,9 +77,11 @@ impl SolveInstructions<'_> {
         ));
         let mut ex = solution.run(self.part_1);
         let ex_handle = ex.run();
+        // let mut stdout = stdout();
+        // stdout.execute(ScrollUp(10));
         while !ex_handle.is_finished() {
             // execute!(stdout(), SavePosition, Print(ex.show_progress()), RestorePosition);
-            execute!(stdout(), SavePosition, PrintStyledContent(ex.show_progress().with(Color::Blue)), RestorePosition);
+            // execute!(stdout, SavePosition, PrintStyledContent(ex.show_progress().with(Color::Blue)), RestorePosition);
             sleep(Duration::from_secs(1))
         }
         let ex_result = ex_handle.join().unwrap();
