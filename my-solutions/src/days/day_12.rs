@@ -1,12 +1,14 @@
+use crate::days::day_12::Entry::{Damaged, Operational, Unknown};
+use rudvent_lib::solution::execution::{
+    EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor,
+};
+use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::collections::HashMap;
 use std::iter::once;
 use std::ops::ShlAssign;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use tracing::{debug, info, instrument};
-use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
-use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
-use crate::days::day_12::Entry::{Damaged, Operational, Unknown};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -36,7 +38,7 @@ impl Entry {
             '.' => Operational,
             '#' => Damaged,
             '?' => Unknown,
-            _ => unreachable!("Unrecognised character")
+            _ => unreachable!("Unrecognised character"),
         }
     }
     fn to_string(&self) -> char {
@@ -58,21 +60,26 @@ impl SpringLine {
     fn from_str(s: &str) -> SpringLine {
         let (spring_str, order_str) = s.split_once(" ").unwrap();
         let springs = spring_str.chars().map(Entry::from_char).collect();
-        let orders = order_str.split(",").map(|o| usize::from_str(o).unwrap()).collect();
-        SpringLine {
-            springs,
-            orders,
-        }
+        let orders = order_str
+            .split(",")
+            .map(|o| usize::from_str(o).unwrap())
+            .collect();
+        SpringLine { springs, orders }
     }
 
     fn from_str_5(s: &str) -> SpringLine {
         let (spring_str, order_str) = s.split_once(" ").unwrap();
-        let springs: Vec<Entry> = vec![spring_str;5].join("?").chars().map(Entry::from_char).collect();
-        let orders = vec![order_str;5].join(",").split(",").map(|o| usize::from_str(o).unwrap()).collect();
-        SpringLine {
-            springs,
-            orders,
-        }
+        let springs: Vec<Entry> = vec![spring_str; 5]
+            .join("?")
+            .chars()
+            .map(Entry::from_char)
+            .collect();
+        let orders = vec![order_str; 5]
+            .join(",")
+            .split(",")
+            .map(|o| usize::from_str(o).unwrap())
+            .collect();
+        SpringLine { springs, orders }
     }
 }
 
@@ -97,11 +104,20 @@ pub fn part_1(
     //     info!("Possibles: {}", res);
     //     res
     // }).sum();
-    input.into_iter().map(|mut spring| {
-        let res = one_line(&mut spring.springs, &mut spring.orders, &mut cache, &monitor).unwrap_or(0);
-        info!("Possibles: {}", res);
-        res
-    }).sum()
+    input
+        .into_iter()
+        .map(|mut spring| {
+            let res = one_line(
+                &mut spring.springs,
+                &mut spring.orders,
+                &mut cache,
+                &monitor,
+            )
+            .unwrap_or(0);
+            info!("Possibles: {}", res);
+            res
+        })
+        .sum()
 }
 
 fn vec_to_u128(vec: &Vec<Entry>, orders: &Vec<usize>) -> Result<u128, ()> {
@@ -109,7 +125,7 @@ fn vec_to_u128(vec: &Vec<Entry>, orders: &Vec<usize>) -> Result<u128, ()> {
         Err(())
     } else {
         let mut full_output: u128 = 0;
-        let mut output : u64 = 0;
+        let mut output: u64 = 0;
         for e in vec {
             let num = match e {
                 Operational => 1u64,
@@ -122,10 +138,10 @@ fn vec_to_u128(vec: &Vec<Entry>, orders: &Vec<usize>) -> Result<u128, ()> {
         full_output += (output as u128);
         full_output.shl_assign(16);
 
-        let mut order_int : u64 = 0;
+        let mut order_int: u64 = 0;
         for o in orders {
             if o > &4usize {
-                return Err(())
+                return Err(());
             } else {
                 order_int += (*o as u64);
                 order_int.shl_assign(4);
@@ -136,14 +152,19 @@ fn vec_to_u128(vec: &Vec<Entry>, orders: &Vec<usize>) -> Result<u128, ()> {
     }
 }
 
-fn one_line_cache(mut line: &mut Vec<Entry>, mut orders: &Vec<usize>, mut cache: &mut HashMap<u128, Option<usize>>, monitor: &Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>) -> Option<usize> {
+fn one_line_cache(
+    mut line: &mut Vec<Entry>,
+    mut orders: &Vec<usize>,
+    mut cache: &mut HashMap<u128, Option<usize>>,
+    monitor: &Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
+) -> Option<usize> {
     let key_res = vec_to_u128(line, orders);
     // info!("{:?}", cache);
     if let Ok(key) = key_res {
         let cache_res = cache.get(&key);
         if let Some(res) = cache_res {
             info!("Found result for {}", vec_to_str(line));
-            return *res
+            return *res;
         }
     }
     let res = one_line(line, orders, cache, monitor);
@@ -153,7 +174,12 @@ fn one_line_cache(mut line: &mut Vec<Entry>, mut orders: &Vec<usize>, mut cache:
     res
 }
 
-fn one_line(mut line: &mut Vec<Entry>, mut orders: &Vec<usize>, mut cache: &mut HashMap<u128, Option<usize>>, monitor: &Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>) -> Option<usize> {
+fn one_line(
+    mut line: &mut Vec<Entry>,
+    mut orders: &Vec<usize>,
+    mut cache: &mut HashMap<u128, Option<usize>>,
+    monitor: &Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
+) -> Option<usize> {
     debug!("Running for {}", vec_to_str(line));
     monitor.lock().unwrap().current_progress += 1;
     let mut current_block_index = 0;
@@ -169,22 +195,20 @@ fn one_line(mut line: &mut Vec<Entry>, mut orders: &Vec<usize>, mut cache: &mut 
                     current_cont = None
                 }
             }
-            Damaged => { match can_take {
-                true => {
-                    match current_cont {
-                        None => {
-                            current_cont = Some(orders.get(current_block_index)? - 1);
-                            current_block_index += 1;
-                        },
-                        Some(cont) => {
-                            current_cont = Some(cont.checked_sub(1)?);
-                        }
+            Damaged => match can_take {
+                true => match current_cont {
+                    None => {
+                        current_cont = Some(orders.get(current_block_index)? - 1);
+                        current_block_index += 1;
                     }
-                }
+                    Some(cont) => {
+                        current_cont = Some(cont.checked_sub(1)?);
+                    }
+                },
                 false => {
                     return None;
                 }
-            }}
+            },
             Unknown => {
                 line[i] = Entry::Damaged;
                 let dam = one_line_cache(line, orders, cache, monitor);
@@ -233,7 +257,6 @@ pub fn make_sol() -> Box<dyn SolutionBuilder> {
     );
     Box::new(sol)
 }
-
 
 // #[cfg(test)]
 // mod tests {

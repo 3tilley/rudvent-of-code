@@ -1,13 +1,13 @@
 use std::thread::sleep;
 use std::time::Duration;
-use std::io::stdout;
+use std::io::{stdout, Write};
 use tracing::{debug, info};
 use chrono::{DateTime, Local};
 use color_eyre::eyre::eyre;
-use crossterm::{ExecutableCommand, execute};
+use crossterm::{ExecutableCommand, execute, queue, QueueableCommand};
 use crossterm::style::{Print, PrintStyledContent, Color, Stylize};
-use crossterm::cursor::{SavePosition, RestorePosition};
-use crossterm::terminal::{ScrollDown, ScrollUp};
+use crossterm::cursor::{SavePosition, RestorePosition, MoveTo};
+use crossterm::terminal::{Clear, ClearType, ScrollDown, ScrollUp};
 use crate::advent_interactions::ask_bool_input;
 use crate::cli::App;
 use crate::solution::{Solution, SolutionBuilder};
@@ -77,12 +77,16 @@ impl SolveInstructions<'_> {
         ));
         let mut ex = solution.run(self.part_1);
         let ex_handle = ex.run();
-        // let mut stdout = stdout();
+        let mut stdout = stdout();
+        stdout.execute(Clear(ClearType::All));
         // stdout.execute(ScrollUp(10));
         while !ex_handle.is_finished() {
             // execute!(stdout(), SavePosition, Print(ex.show_progress()), RestorePosition);
-            // execute!(stdout, SavePosition, PrintStyledContent(ex.show_progress().with(Color::Blue)), RestorePosition);
-            sleep(Duration::from_secs(1))
+            stdout.queue(PrintStyledContent(ex.show_progress().with(Color::Blue))).unwrap();
+            // stdout.queue(MoveTo(0,0));
+            stdout.flush();
+            sleep(Duration::from_secs(1));
+
         }
         let ex_result = ex_handle.join().unwrap();
         ex_result.show_info(&self.app.printer);

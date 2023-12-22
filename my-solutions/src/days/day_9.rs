@@ -1,5 +1,7 @@
 use num_traits::Zero;
-use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{
+    EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor,
+};
 use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::fmt::format;
 use std::ops::BitOr;

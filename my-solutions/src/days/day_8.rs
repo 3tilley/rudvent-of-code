@@ -1,4 +1,6 @@
-use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{
+    EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor,
+};
 use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::collections::HashMap;
 use std::ops::Shl;

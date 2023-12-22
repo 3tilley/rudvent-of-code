@@ -1,4 +1,6 @@
-use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{
+    EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor,
+};
 use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};

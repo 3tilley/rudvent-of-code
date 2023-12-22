@@ -4,7 +4,9 @@ use nom::combinator::map_res;
 use nom::multi::many1;
 use nom::sequence::{preceded, separated_pair, Tuple};
 use nom::{AsChar, IResult, Parser};
-use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{
+    EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor,
+};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::HashSet;
 use std::str::FromStr;

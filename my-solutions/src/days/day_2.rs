@@ -4,7 +4,9 @@ use nom::character::complete::u64 as nom64;
 use nom::multi::separated_list1;
 use nom::sequence::Tuple;
 use nom::{IResult, Parser};
-use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{
+    EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor,
+};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::cmp::max;
 use std::str::FromStr;

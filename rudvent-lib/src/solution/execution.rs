@@ -33,7 +33,11 @@ impl<T: Monitor> RuntimeMonitor<T> {
     }
 
     pub fn cycles(&self, elapsed: chrono::Duration) -> String {
-        if self.current_progress != 0 {
+        if (self.total_progress != 0) {
+            let percentage = 100.0 * (self.current_progress as f32) / (self.total_progress as f32);
+
+            format!("\n{}% complete. {} iterations / {}. {} cycles per second", percentage, unitless_formatter(self.current_progress as u64), unitless_formatter(self.total_progress as u64), unitless_formatter_i((self.current_progress as f32) * 1_000_000.0  / (elapsed.num_microseconds().unwrap() as f32)))
+        } else if self.current_progress != 0 {
             format!("\n{} iterations. {} cycles per second", unitless_formatter(self.current_progress as u64), unitless_formatter_i((self.current_progress as f32) * 1_000_000.0  / (elapsed.num_microseconds().unwrap() as f32)))
         } else { "".to_string() }
     }

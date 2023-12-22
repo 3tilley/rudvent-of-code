@@ -1,9 +1,11 @@
+use array2d::Array2D;
+use rudvent_lib::solution::execution::{
+    EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor,
+};
+use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
-use array2d::Array2D;
-use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
-use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
 
 // Update these types to reflect the types you want to use to solve the problems. These
 // can be simple types (u64), integers, or your own types
@@ -26,7 +28,6 @@ pub struct Universe {
 
 impl Universe {
     fn from_str(input: String, expansion: usize) -> Universe {
-
         let mut cols = HashSet::<usize>::new();
         let mut rows = HashSet::<usize>::new();
         let mut original_galaxies = Vec::new();
@@ -37,31 +38,38 @@ impl Universe {
                 if c == '#' {
                     cols.insert(col);
                     rows.insert(row);
-                    original_galaxies.push((row,col));
+                    original_galaxies.push((row, col));
                 }
                 max_col = max(max_col, col);
             }
             max_row = max(max_row, row);
         }
-        let row_map : Vec<usize> = (0..max_row * 2).scan(0, |acc, val| {
-            if rows.contains(&val) {
-                *acc += 1
-            } else {
-                *acc += expansion
-            }
-            Some(*acc)
-        }).collect();
-        let col_map : Vec<usize> = (0..max_col * 2).scan(0, |acc, val| {
-            if cols.contains(&val) {
-                *acc += 1
-            } else {
-                *acc += expansion
-            }
-            Some(*acc)
-        }).collect();
+        let row_map: Vec<usize> = (0..max_row * 2)
+            .scan(0, |acc, val| {
+                if rows.contains(&val) {
+                    *acc += 1
+                } else {
+                    *acc += expansion
+                }
+                Some(*acc)
+            })
+            .collect();
+        let col_map: Vec<usize> = (0..max_col * 2)
+            .scan(0, |acc, val| {
+                if cols.contains(&val) {
+                    *acc += 1
+                } else {
+                    *acc += expansion
+                }
+                Some(*acc)
+            })
+            .collect();
 
-        let galaxies = original_galaxies.into_iter().map(|(row, col)| (row_map[row], col_map[col])).collect();
-        Universe { galaxies}
+        let galaxies = original_galaxies
+            .into_iter()
+            .map(|(row, col)| (row_map[row], col_map[col]))
+            .collect();
+        Universe { galaxies }
     }
 }
 
@@ -77,12 +85,21 @@ pub fn part_1(
     monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
     let map = HashMap::<(usize, usize), usize>::new();
-    input.galaxies.iter().enumerate().map(|(gal1, (row1, col1))| {
-        input.galaxies.iter().enumerate().filter_map(move |(gal2, (row2, col2))| {
-            (gal1 < gal2).then_some(row1.abs_diff(*row2) + col1.abs_diff(*col2))
+    input
+        .galaxies
+        .iter()
+        .enumerate()
+        .map(|(gal1, (row1, col1))| {
+            input
+                .galaxies
+                .iter()
+                .enumerate()
+                .filter_map(move |(gal2, (row2, col2))| {
+                    (gal1 < gal2).then_some(row1.abs_diff(*row2) + col1.abs_diff(*col2))
+                })
         })
-    }
-    ).flatten().sum()
+        .flatten()
+        .sum()
 }
 
 // If the puzzle requires a different input for part 2, this function can be updated

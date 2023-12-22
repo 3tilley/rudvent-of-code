@@ -3,7 +3,9 @@ use nom::bytes::complete::{tag, take};
 use nom::character::complete::digit1;
 use nom::multi::many1;
 use nom::{IResult, Parser};
-use rudvent_lib::solution::execution::{EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor};
+use rudvent_lib::solution::execution::{
+    EmptyUserMonitor, EmptyUserParams, Example, RunParams, RuntimeMonitor,
+};
 use rudvent_lib::solution::{Solution, SolutionBuilder, StructSolutionBuilder};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;

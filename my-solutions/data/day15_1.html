@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+<meta charset="utf-8"/>
+<title>Day 15 - Advent of Code 2023</title>
+<link rel="stylesheet" type="text/css" href="/static/style.css?31"/>
+<link rel="stylesheet alternate" type="text/css" href="/static/highcontrast.css?1" title="High Contrast"/>
+<link rel="shortcut icon" href="/favicon.png"/>
+<script>window.addEventListener('click', function(e,s,r){if(e.target.nodeName==='CODE'&&e.detail===3){s=window.getSelection();s.removeAllRanges();r=document.createRange();r.selectNodeContents(e.target);s.addRange(r);}});</script>
+</head><!--
+
+
+
+
+Oh, hello!  Funny seeing you here.
+
+I appreciate your enthusiasm, but you aren't going to find much down here.
+There certainly aren't clues to any of the puzzles.  The best surprises don't
+even appear in the source until you unlock them for real.
+
+Please be careful with automated requests; I'm not a massive company, and I can
+only take so much traffic.  Please be considerate so that everyone gets to play.
+
+If you're curious about how Advent of Code works, it's running on some custom
+Perl code. Other than a few integrations (auth, analytics, social media), I
+built the whole thing myself, including the design, animations, prose, and all
+of the puzzles.
+
+The puzzles are most of the work; preparing a new calendar and a new set of
+puzzles each year takes all of my free time for 4-5 months. A lot of effort
+went into building this thing - I hope you're enjoying playing it as much as I
+enjoyed making it for you!
+
+If you'd like to hang out, I'm @ericwastl@hachyderm.io on Mastodon and
+@ericwastl on Twitter.
+
+- Eric Wastl
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-->
+<body>
+<header><div><h1 class="title-global"><a href="/">Advent of Code</a></h1><nav><ul><li><a href="/2023/about">[About]</a></li><li><a href="/2023/events">[Events]</a></li><li><a href="https://teespring.com/stores/advent-of-code" target="_blank">[Shop]</a></li><li><a href="/2023/settings">[Settings]</a></li><li><a href="/2023/auth/logout">[Log Out]</a></li></ul></nav><div class="user">3tilley <span class="star-count">23*</span></div></div><div><h1 class="title-event">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="title-event-wrap">/*</span><a href="/2023">2023</a><span class="title-event-wrap">*/</span></h1><nav><ul><li><a href="/2023">[Calendar]</a></li><li><a href="/2023/support">[AoC++]</a></li><li><a href="/2023/sponsors">[Sponsors]</a></li><li><a href="/2023/leaderboard">[Leaderboard]</a></li><li><a href="/2023/stats">[Stats]</a></li></ul></nav></div></header>
+
+<div id="sidebar">
+<div id="sponsor"><div class="quiet">Our <a href="/2023/sponsors">sponsors</a> help make Advent of Code possible:</div><div class="sponsor"><a href="https://canvasapp.com/?ref=aoc2023" target="_blank" onclick="if(ga)ga('send','event','sponsor','sidebar',this.href);" rel="noopener">Canvas</a> - Grok your startup.</div></div>
+</div><!--/sidebar-->
+
+<main>
+<article class="day-desc"><h2>--- Day 15: Lens Library ---</h2><p>The newly-focused parabolic reflector dish is sending all of the collected light to a point on the side of yet another mountain - the largest mountain on Lava Island. As you approach the mountain, you find that the light is being collected by the wall of a large facility embedded in the mountainside.</p>
+<p>You find a door under a large sign that says "Lava Production Facility" and next to a smaller sign that says "Danger - Personal Protective Equipment required beyond this point".</p>
+<p>As you step inside, you are immediately greeted by a somewhat panicked <span title="do you like my hard hat">reindeer</span> wearing goggles and a loose-fitting <a href="https://en.wikipedia.org/wiki/Hard_hat" target="_blank">hard hat</a>. The reindeer leads you to a shelf of goggles and hard hats (you quickly find some that fit) and then further into the facility. At one point, you pass a button with a faint snout mark and the label "PUSH FOR HELP". No wonder you were loaded into that <a href="1">trebuchet</a> so quickly!</p>
+<p>You pass through a final set of doors surrounded with even more warning signs and into what must be the room that collects all of the light from outside. As you admire the large assortment of lenses available to further focus the light, the reindeer brings you a book titled "Initialization Manual".</p>
+<p>"Hello!", the book cheerfully begins, apparently unaware of the concerned reindeer reading over your shoulder. "This procedure will let you bring the Lava Production Facility online - all without burning or melting anything unintended!"</p>
+<p>"Before you begin, please be prepared to use the Holiday ASCII String Helper algorithm (appendix 1A)." You turn to appendix 1A. The reindeer leans closer with interest.</p>
+<p>The HASH algorithm is a way to turn any <a href="https://en.wikipedia.org/wiki/String_(computer_science)" target="_blank">string</a> of characters into a single <em>number</em> in the range 0 to 255. To run the HASH algorithm on a string, start with a <em>current value</em> of <code>0</code>. Then, for each character in the string starting from the beginning:</p>
+<ul>
+<li>Determine the <a href="https://en.wikipedia.org/wiki/ASCII#Printable_characters" target="_blank">ASCII code</a> for the current character of the string.</li>
+<li>Increase the <em>current value</em> by the ASCII code you just determined.</li>
+<li>Set the <em>current value</em> to itself multiplied by <code>17</code>.</li>
+<li>Set the <em>current value</em> to the <a href="https://en.wikipedia.org/wiki/Modulo" target="_blank">remainder</a> of dividing itself by <code>256</code>.</li>
+</ul>
+<p>After following these steps for each character in the string in order, the <em>current value</em> is the output of the HASH algorithm.</p>
+<p>So, to find the result of running the HASH algorithm on the string <code>HASH</code>:</p>
+<ul>
+<li>The <em>current value</em> starts at <code>0</code>.</li>
+<li>The first character is <code>H</code>; its ASCII code is <code>72</code>.</li>
+<li>The <em>current value</em> increases to <code>72</code>.</li>
+<li>The <em>current value</em> is multiplied by <code>17</code> to become <code>1224</code>.</li>
+<li>The <em>current value</em> becomes <code><em>200</em></code> (the remainder of <code>1224</code> divided by <code>256</code>).</li>
+<li>The next character is <code>A</code>; its ASCII code is <code>65</code>.</li>
+<li>The <em>current value</em> increases to <code>265</code>.</li>
+<li>The <em>current value</em> is multiplied by <code>17</code> to become <code>4505</code>.</li>
+<li>The <em>current value</em> becomes <code><em>153</em></code> (the remainder of <code>4505</code> divided by <code>256</code>).</li>
+<li>The next character is <code>S</code>; its ASCII code is <code>83</code>.</li>
+<li>The <em>current value</em> increases to <code>236</code>.</li>
+<li>The <em>current value</em> is multiplied by <code>17</code> to become <code>4012</code>.</li>
+<li>The <em>current value</em> becomes <code><em>172</em></code> (the remainder of <code>4012</code> divided by <code>256</code>).</li>
+<li>The next character is <code>H</code>; its ASCII code is <code>72</code>.</li>
+<li>The <em>current value</em> increases to <code>244</code>.</li>
+<li>The <em>current value</em> is multiplied by <code>17</code> to become <code>4148</code>.</li>
+<li>The <em>current value</em> becomes <code><em>52</em></code> (the remainder of <code>4148</code> divided by <code>256</code>).</li>
+</ul>
+<p>So, the result of running the HASH algorithm on the string <code>HASH</code> is <code><em>52</em></code>.</p>
+<p>The <em>initialization sequence</em> (your puzzle input) is a comma-separated list of steps to start the Lava Production Facility. <em>Ignore newline characters</em> when parsing the initialization sequence. To verify that your HASH algorithm is working, the book offers the sum of the result of running the HASH algorithm on each step in the initialization sequence.</p>
+<p>For example:</p>
+<pre><code>rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7</code></pre>
+<p>This initialization sequence specifies 11 individual steps; the result of running the HASH algorithm on each of the steps is as follows:</p>
+<ul>
+<li><code>rn=1</code> becomes <code><em>30</em></code>.</li>
+<li><code>cm-</code> becomes <code><em>253</em></code>.</li>
+<li><code>qp=3</code> becomes <code><em>97</em></code>.</li>
+<li><code>cm=2</code> becomes <code><em>47</em></code>.</li>
+<li><code>qp-</code> becomes <code><em>14</em></code>.</li>
+<li><code>pc=4</code> becomes <code><em>180</em></code>.</li>
+<li><code>ot=9</code> becomes <code><em>9</em></code>.</li>
+<li><code>ab=5</code> becomes <code><em>197</em></code>.</li>
+<li><code>pc-</code> becomes <code><em>48</em></code>.</li>
+<li><code>pc=6</code> becomes <code><em>214</em></code>.</li>
+<li><code>ot=7</code> becomes <code><em>231</em></code>.</li>
+</ul>
+<p>In this example, the sum of these results is <code><em>1320</em></code>. Unfortunately, the reindeer has stolen the page containing the expected verification number and is currently running around the facility with it excitedly.</p>
+<p>Run the HASH algorithm on each step in the initialization sequence. <em>What is the sum of the results?</em> (The initialization sequence is one long line; be careful when copy-pasting it.)</p>
+</article>
+<p>To begin, <a href="15/input" target="_blank">get your puzzle input</a>.</p>
+<form method="post" action="15/answer"><input type="hidden" name="level" value="1"/><p>Answer: <input type="text" name="answer" autocomplete="off"/> <input type="submit" value="[Submit]"/></p></form>
+<p>You can also <span class="share">[Share<span class="share-content">on
+  <a href="https://twitter.com/intent/tweet?text=%22Lens+Library%22+%2D+Day+15+%2D+Advent+of+Code+2023&amp;url=https%3A%2F%2Fadventofcode%2Ecom%2F2023%2Fday%2F15&amp;related=ericwastl&amp;hashtags=AdventOfCode" target="_blank">Twitter</a>
+  <a href="javascript:void(0);" onclick="var ms; try{ms=localStorage.getItem('mastodon.server')}finally{} if(typeof ms!=='string')ms=''; ms=prompt('Mastodon Server?',ms); if(typeof ms==='string' && ms.length){this.href='https://'+ms+'/share?text=%22Lens+Library%22+%2D+Day+15+%2D+Advent+of+Code+2023+%23AdventOfCode+https%3A%2F%2Fadventofcode%2Ecom%2F2023%2Fday%2F15';try{localStorage.setItem('mastodon.server',ms);}finally{}}else{return false;}" target="_blank">Mastodon</a
+></span>]</span> this puzzle.</p>
+</main>
+
+<!-- ga -->
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+ga('create', 'UA-69522494-1', 'auto');
+ga('set', 'anonymizeIp', true);
+ga('send', 'pageview');
+</script>
+<!-- /ga -->
+</body>
+</html>
