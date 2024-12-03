@@ -84,7 +84,7 @@ impl AppBuilder {
             cli: cli_args,
             printer: Printer {},
             // TODO: Handle this better, maybe assume that it's the current year?
-            year: self.year.unwrap_or(2023),
+            year: self.year.unwrap_or(2024),
             day_format: self.day_format.unwrap_or("day_{day}.rs".to_string()),
             solutions: self.solutions,
             auth_token,

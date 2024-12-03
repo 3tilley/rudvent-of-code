@@ -10,7 +10,7 @@ static SOLUTIONS_ARRAY: SolutionBuilders = &[];
 
 fn main() -> () {
     let app = rudvent_lib::cli::AppBuilder::new(&SOLUTIONS_ARRAY)
-        .with_year(2023)
+        .with_year(2024)
         .build();
     app.run().unwrap();
 }

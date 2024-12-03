@@ -9,7 +9,7 @@ pub fn get_solutions() -> Vec<AdventSolutionWithMetadata> {
     let mut vec = Vec::new();
 
     let solution = AdventSolution {
-        year: 2023,
+        year: 2024,
         functioning: true,
         description: None,
         day: 1,
@@ -25,7 +25,7 @@ pub fn get_solutions() -> Vec<AdventSolutionWithMetadata> {
         server_side_run: None,
     };
     let solution_2 = AdventSolution {
-        year: 2023,
+        year: 2024,
         functioning: true,
         description: None,
         day: 1,

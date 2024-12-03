@@ -18,7 +18,7 @@ static SOLUTIONS_ARRAY: SolutionBuilders = &[];
 
 fn main() -> () {
     let app = rudvent_lib::cli::AppBuilder::new(&SOLUTIONS_ARRAY)
-        .with_year(2023)
+        .with_year(2024)
         .build();
     app.run().unwrap();
 }
@@ -29,7 +29,7 @@ With `main.rs` set up, you can run `new` and `fetch` to populate a local cache a
 
 ![image](https://github.com/3tilley/rudvent-of-code/assets/1138504/d3961cb3-3938-44b1-b181-b6e54c4a1a39)
 
-This will generate you a template for a ne day like the below, where you can fill in the types and the gaps.
+This will generate you a template for a new day like the below, where you can fill in the types and the gaps.
 
 ```rust
 // Update these types to reflect the types you want to use to solve the problems. These
