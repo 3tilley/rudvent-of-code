@@ -1,6 +1,8 @@
 use rudvent_lib::types::SolutionBuilders;
 
 // Begin mod declarations
+mod day_1;
+mod day_2;
 // End mod declarations
 
 // pub static TEST_VEC: &'static [Option<Box<dyn SolutionBuilder>>] = &[
@@ -9,8 +11,8 @@ use rudvent_lib::types::SolutionBuilders;
 
 pub static DAYS_ARRAY: SolutionBuilders = &[
     // Begin: Add days
-    None,                   // Day 01
-    None,                   // Day 02
+    Some(day_1::make_sol),                   // Day 01
+    Some(day_2::make_sol),                   // Day 02
     None,                   // Day 03
     None,                   // Day 04
     None,                   // Day 05

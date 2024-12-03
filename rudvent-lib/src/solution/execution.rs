@@ -199,7 +199,7 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
                 Some(example) => {
                     if result == example {
                         Ok(result)
-                    } else if result == U::default() {
+                    } else if example == U::default() {
                         Err(eyre!("Example didn't match, but example == {}. Did you update EXAMPLE_1_ANS?", example))
                     } else {
                         Err(eyre!(
