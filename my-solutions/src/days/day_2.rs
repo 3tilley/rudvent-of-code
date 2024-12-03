@@ -27,7 +27,7 @@ fn in_bounds(fst: OutputPart2, snd: OutputPart2, is_inc: bool) -> bool {
     if fst.abs_diff(snd) > 3 || fst.abs_diff(snd) < 1 {
         return false
     } else {
-        (is_inc && (fst < snd)) || (!is_inc && (fst > snd))
+        !(is_inc ^ (fst < snd))
     }
 }
 
@@ -57,12 +57,40 @@ pub fn prepare_2(input: String) -> InputPart2 {
     prepare(input)
 }
 
+// struct ProblemLocation {
+//     err_index: usize,
+//     was_inc: bool,
+// }
+
+// impl ProblemLocation {
+//     fn check_vec(vec: Vec<usize>) -> bool {
+
+//     }
+// }
+
+// fn check_iter(it: _, is_inc: bool) -> Option<ProblemLocation> {
+
+//     it.try_fold((in_inc, 1, ))
+// }
+
 pub fn part_2(
     mut input: InputPart1,
     run_parameter: &RunParams<UserParams>,
     monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
-    todo!("Implement part 2")
+    input.into_iter().filter(|level| {
+        let mut it = level.into_iter();
+        let fst = it.next().unwrap();
+        let snd = it.next().unwrap();
+        if !in_bounds(*fst, *snd, snd > fst) { return false;}
+        it.try_fold((snd > fst, snd), |acc, v| {
+            if in_bounds(*acc.1, *v, acc.0) {
+                Ok((acc.0, v))
+            } else {
+                Err(())
+            }
+        }).is_ok()
+    }).count()
 }
 
 // ----- There is no need to change anything below this line -----

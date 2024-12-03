@@ -200,10 +200,10 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
                     if result == example {
                         Ok(result)
                     } else if example == U::default() {
-                        Err(eyre!("Example didn't match, but example == {}. Did you update EXAMPLE_1_ANS?", example))
+                        Err(eyre!("Example didn't match (got {}), but example == {} which looks like a default. Did you update EXAMPLE_ANS?", result, example))
                     } else {
                         Err(eyre!(
-                            "Example 1 failed. Expected: {:?}, got: {:?}",
+                            "Example failed. Expected: {:?}, got: {:?}",
                             example,
                             result
                         ))
