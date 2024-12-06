@@ -4,6 +4,9 @@ use rudvent_lib::types::SolutionBuilders;
 mod day_1;
 mod day_2;
 mod day_3;
+mod day_4;
+mod day_5;
+mod day_6;
 // End mod declarations
 
 // pub static TEST_VEC: &'static [Option<Box<dyn SolutionBuilder>>] = &[
@@ -15,9 +18,9 @@ pub static DAYS_ARRAY: SolutionBuilders = &[
     Some(day_1::make_sol),                   // Day 01
     Some(day_2::make_sol),                   // Day 02
     Some(day_3::make_sol),                   // Day 03
-    None,                   // Day 04
-    None,                   // Day 05
-    None,                   // Day 06
+    Some(day_4::make_sol),                   // Day 04
+    Some(day_5::make_sol),                   // Day 05
+    Some(day_6::make_sol),                   // Day 06
     None,                   // Day 07
     None,                   // Day 08
     None,                   // Day 09
