@@ -90,14 +90,14 @@ impl DayData {
     }
 
     pub fn example_2_path(&self) -> PathBuf {
-        // let ex_1 = self.data_dir.join(format!("day{}_example_1.txt", self.day));
+        let ex_1 = self.data_dir.join(format!("day{}_example_1.txt", self.day));
         let ex_2 = self.data_dir.join(format!("day{}_example_2.txt", self.day));
-        // if ex_2.exists() {
-        //     ex_2
-        // } else {
-        //     ex_1
-        // }
-        ex_2
+        if ex_2.exists() {
+            ex_2
+        } else {
+            ex_1
+        }
+        // ex_2
     }
 
     pub fn input_1_path(&self) -> PathBuf {

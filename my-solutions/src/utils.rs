@@ -1,6 +1,63 @@
 use array2d::Array2D;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::iter::once;
+use std::marker::PhantomData;
+
+trait Index<T, O>: PartialEq + Eq + Copy + Clone + std::hash::Hash {
+    fn in_bounds(&self, lower: &T, higher: &T) -> bool;
+    fn default_lower() -> T;
+    fn offset(&self, offset: &O, lower: &T, higher: &T) -> Option<T>;
+}
+
+impl Index<(usize, usize), (isize, isize)> for (usize, usize) {
+    fn in_bounds(&self, lower: &(usize, usize), higher: &(usize, usize)) -> bool {
+        (self.0 >= lower.0) && (self.1 >= lower.1) && (self.0 <= higher.0) && (self.1 <= higher.1)
+    }
+    fn default_lower() -> (usize, usize) {
+        (0,0)
+    }
+    fn offset(&self, offset: &(isize, isize), lower: &(usize, usize), higher: &(usize, usize)) -> Option<(usize, usize)> {
+        let new_row =self.0.checked_add_signed(offset.0)?;
+        let new_col = self.1.checked_add_signed(offset.1)?;
+        if (new_row, new_col).in_bounds(lower, higher) {
+            Some((new_row, new_col))
+        } else {
+            None
+        }
+    }
+}
+
+pub(crate) struct SparseArray<I: Index<I, O>, T, O> {
+    data: HashMap<I, T>,
+    min_bounds: I,
+    max_bounds: I,
+    _offset: PhantomData<O>
+}
+
+impl<I: Index<I, O>, T, O> SparseArray<I, T, O> {
+    pub fn new(data: Vec<(I, T)>, max_bounds: I) -> Result<SparseArray<I, T, O>, I> {
+        let min_bounds = I::default_lower();
+        for (i,v) in data.iter() {
+            if !i.in_bounds(&min_bounds, &max_bounds) {
+                return Err(*i)
+            }
+        }
+        let sparse = SparseArray {
+            data: HashMap::from_iter(data.into_iter()),
+            min_bounds,
+            max_bounds,
+            _offset: PhantomData,
+        };
+        Ok(sparse)
+    }
+
+    pub fn offset_index(&self, origin: &I, offset: &O) -> Option<I> {
+        origin.offset(&offset, &self.min_bounds, &self.max_bounds)
+    }
+
+
+}
 
 pub(crate) trait Array2DExt<T> {
     fn row(&self, index: usize) -> Vec<&T>;

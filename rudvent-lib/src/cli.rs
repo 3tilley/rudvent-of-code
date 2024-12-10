@@ -53,6 +53,8 @@ pub enum Commands {
         day: u8,
         #[arg(short, long)]
         overwrite: bool,
+        #[arg(short, long)]
+        example: Option<String>
     },
     /// Fetch data for a particular day
     Fetch {

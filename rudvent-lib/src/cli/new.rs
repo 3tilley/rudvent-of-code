@@ -11,6 +11,7 @@ pub struct NewInstructions<'a> {
     pub(crate) day: u8,
     pub(crate) overwrite: bool,
     pub(crate) app: &'a App,
+    pub(crate) example: Option<String>,
 }
 
 impl NewInstructions<'_> {
@@ -124,7 +125,10 @@ impl NewInstructions<'_> {
     }
 
     fn create_and_replace(&self, target_path: &Path, template_contents: &str) -> color_eyre::Result<()> {
-        let updated = template_contents.replace("use crate::", "use rudvent_lib::");
+        let mut updated = template_contents.replace("use crate::", "use rudvent_lib::");
+        if let Some(example) = &self.example {
+            updated = updated.replace("const EXAMPLE_1_ANS: OutputPart1 = 0;", &format!("const EXAMPLE_1_ANS: OutputPart1 = {};", example));
+        }
         fs_err::write(&target_path, updated)?;
         Ok(())
     }

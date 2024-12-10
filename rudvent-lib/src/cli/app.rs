@@ -26,10 +26,11 @@ pub struct App {
 impl App {
     pub fn run(&self) -> Result<()> {
         match &self.cli.sub_cmd {
-            Commands::New { day, overwrite } => {
+            Commands::New { day, overwrite, example } => {
                 let instructions = NewInstructions {
                     day: *day,
                     overwrite: *overwrite,
+                    example: example.clone(),
                     app: self,
                 };
                 instructions.execute()?;

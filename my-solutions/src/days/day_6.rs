@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::ops::AddAssign;
 use std::sync::{Arc, Mutex};
 use array2d::Array2D;
 use rudvent_lib::solution::{SolutionBuilder, StructSolutionBuilder};
@@ -123,7 +124,7 @@ pub fn part_2(
         let mut positions = HashSet::new();
         let mut new_map = input.map.clone();
         new_map.set(pos.0, pos.1, Tile::Obstacle);
-        let new_input = State { map: new_map, start_facing: input.start_facing, start_pos: input.start_pos, location: input.start_pos, facing: input.start_facing };
+        let mut input = State { map: new_map, start_facing: input.start_facing, start_pos: input.start_pos, location: input.start_pos, facing: input.start_facing };
         while let GuardMove::MoveTo(new_pos, facing) = input.next_spot() {
             if positions.contains(&(new_pos, facing)) {
                 return true
@@ -131,6 +132,7 @@ pub fn part_2(
             positions.insert((new_pos, facing));
             input.facing = facing;
             input.location = new_pos;
+            monitor.lock().unwrap().current_progress.add_assign(1);
         }
         false
     }).count()

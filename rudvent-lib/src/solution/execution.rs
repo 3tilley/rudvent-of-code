@@ -49,6 +49,7 @@ impl<T: Monitor> RuntimeMonitor<T> {
     pub fn new_arc() -> Arc<Mutex<RuntimeMonitor<T>>> {
         Arc::new(Mutex::new(RuntimeMonitor::new()))
     }
+
 }
 
 #[derive(Default, Clone, Debug)]
