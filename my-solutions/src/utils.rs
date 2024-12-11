@@ -94,6 +94,8 @@ pub(crate) trait Array2DExt<T> {
         <V as TryInto<isize>>::Error: Debug;
     
     fn offset_iter(&self, start: (usize, usize), include_diagonal: bool) -> impl Iterator<Item = (i8, i8)>;
+
+    fn to_str(&self, f: impl Fn((&T, usize, usize)) -> String) -> String;
 }
 
 impl<T> Array2DExt<T> for Array2D<T> {
@@ -188,6 +190,18 @@ impl<T> Array2DExt<T> for Array2D<T> {
     fn offset_iter(&self, start: (usize, usize), include_diagonal: bool) -> impl Iterator<Item = (i8, i8)>
     {
         OffsetIter::new(self, start, include_diagonal)
+    }
+
+    fn to_str(&self, f: impl Fn((&T, usize, usize)) -> String) -> String {
+        let mut rows = Vec::new();
+        for row in 0..self.row_len() {
+            let mut cols = Vec::new();
+            for col in 0.. self.column_len() {
+                cols.push(f((self.get(row, col).unwrap(), row, col)));
+            }
+            rows.push(cols.join(""));
+        }
+        rows.join("\n")
     }
 }
 

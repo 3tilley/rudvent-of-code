@@ -10,6 +10,7 @@ mod day_6;
 mod day_7;
 mod day_8;
 mod day_9;
+mod day_10;
 // End mod declarations
 
 // pub static TEST_VEC: &'static [Option<Box<dyn SolutionBuilder>>] = &[
@@ -27,7 +28,7 @@ pub static DAYS_ARRAY: SolutionBuilders = &[
     Some(day_7::make_sol),                   // Day 07
     Some(day_8::make_sol),                   // Day 08
     Some(day_9::make_sol),                   // Day 09
-    None,                   // Day 10
+    Some(day_10::make_sol),                   // Day 10
     None,                   // Day 11
     None,                   // Day 12
     None,                   // Day 13
