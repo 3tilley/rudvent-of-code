@@ -70,7 +70,7 @@ pub(crate) trait Array2DExt<T> {
     where
         <V as TryInto<isize>>::Error: Debug;
 
-    fn from_newline_delimited(s: &str, mapping_func: impl FnMut(char, usize, usize) -> T + Copy) -> Array2D<T>;
+    fn from_newline_delimited(s: &str, mapping_func: impl FnMut((usize, usize, char)) -> T + Copy) -> Array2D<T>;
 
     fn offset<V: TryInto<isize>>(
         &self,
@@ -95,7 +95,9 @@ pub(crate) trait Array2DExt<T> {
     
     fn offset_iter(&self, start: (usize, usize), include_diagonal: bool) -> impl Iterator<Item = (i8, i8)>;
 
-    fn to_str(&self, f: impl Fn((&T, usize, usize)) -> String) -> String;
+    fn to_str(&self, f: impl Fn((usize, usize, &T)) -> String) -> String;
+
+    fn neighbours_iter<'a>(&'a self, start: (usize, usize), include_diagonal: bool) -> impl Iterator<Item = (usize, usize, &'a T)> where T: 'a;
 }
 
 impl<T> Array2DExt<T> for Array2D<T> {
@@ -127,7 +129,7 @@ impl<T> Array2DExt<T> for Array2D<T> {
             .filter(|col| col < &self.row_len())
     }
 
-    fn from_newline_delimited(s: &str, mut mapping_func: impl FnMut(char, usize, usize) -> T + Copy) -> Array2D<T> {
+    fn from_newline_delimited(s: &str, mut mapping_func: impl FnMut((usize, usize, char)) -> T + Copy) -> Array2D<T> {
         let mut iterator = s.lines().enumerate();
         // TODO: Consider whether this is accurate
         let (_, max_rows) = iterator.size_hint();
@@ -143,7 +145,7 @@ impl<T> Array2DExt<T> for Array2D<T> {
         let cols = first.1.len();
         let mut mapped_iter = once(first)
             .chain(iterator)
-            .flat_map(|(row, line)| line.chars().enumerate().map(move |(col, c)| mapping_func(c, row, col)));
+            .flat_map(|(row, line)| line.chars().enumerate().map(move |(col, c)| mapping_func((row, col, c))));
         let res = Array2D::from_iter_row_major(mapped_iter, rows, cols).unwrap();
         // assert!(mapped_iter.next().is_none());
         res
@@ -192,16 +194,23 @@ impl<T> Array2DExt<T> for Array2D<T> {
         OffsetIter::new(self, start, include_diagonal)
     }
 
-    fn to_str(&self, f: impl Fn((&T, usize, usize)) -> String) -> String {
+    fn to_str(&self, f: impl Fn((usize, usize, &T)) -> String) -> String {
         let mut rows = Vec::new();
         for row in 0..self.row_len() {
             let mut cols = Vec::new();
             for col in 0.. self.column_len() {
-                cols.push(f((self.get(row, col).unwrap(), row, col)));
+                cols.push(f((row, col, self.get(row, col).unwrap())));
             }
             rows.push(cols.join(""));
         }
         rows.join("\n")
+    }
+
+    fn neighbours_iter<'a>(&'a self, start: (usize, usize), include_diagonal: bool) -> impl Iterator<Item=(usize, usize, &'a T)> where T: 'a {
+        self.offset_iter(start, include_diagonal).map(move |offset| {
+            let new_pos = (start.0.checked_add_signed(offset.0.into()).unwrap(), start.1.checked_add_signed(offset.1.into()).unwrap());
+            (new_pos.0, new_pos.1, self.get(new_pos.0, new_pos.1).unwrap())
+        })
     }
 }
 
@@ -342,7 +351,7 @@ mod tests {
 
     #[test]
     fn test_from_string() {
-        let arr = Array2D::from_newline_delimited("abc\ndef", |c, _, _| c);
+        let arr = Array2D::from_newline_delimited("abc\ndef", |c| c.2);
         println!("{:?}", arr);
         assert_eq!(arr.num_rows(), 2);
         assert_eq!(arr.num_columns(), 3);

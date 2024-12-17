@@ -74,7 +74,7 @@ pub fn prepare(input: String) -> InputPart1 {
     use std::rc::Rc;
 
     let location = Rc::new(RefCell::new((0, 0)));
-    let map = Array2D::from_newline_delimited(&input, |c, row, col| -> Tile {
+    let map = Array2D::from_newline_delimited(&input, |(row, col, c)| -> Tile {
         match c {
             '.' => Tile::Empty,
             '#' => Tile::Obstacle,

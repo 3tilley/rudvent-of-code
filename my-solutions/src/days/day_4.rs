@@ -21,7 +21,7 @@ type UserMonitor = EmptyUserMonitor;
 
 // This function is called to prepare the input for part 1
 pub fn prepare(input: String) -> InputPart1 {
-    Array2D::from_newline_delimited(&input, |s, _, _| s)
+    Array2D::from_newline_delimited(&input, |s| s.2)
 }
 
 // Implement your solution for part 1 here

@@ -32,7 +32,7 @@ type UserMonitor = EmptyUserMonitor;
 
 // This function is called to prepare the input for part 1
 pub fn prepare(input: String) -> InputPart1 {
-    Array2D::from_newline_delimited(&input, |s, _, _| s.to_digit(10).unwrap().try_into().unwrap())
+    Array2D::from_newline_delimited(&input, |s| s.2.to_digit(10).unwrap().try_into().unwrap())
 }
 
 pub fn part_1(

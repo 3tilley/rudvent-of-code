@@ -55,12 +55,14 @@ fn add(p: usize, v: isize, limit: usize, its: usize) -> usize {
     match p.checked_add_signed(movement) {
         Some(new_pos) => new_pos % limit,
         None => {
+            // There is definitely a simpler way of doing this
             let m = movement % limit.to_isize().unwrap();
-            p.checked_add_signed(m).unwrap_or_else(|| {
-                let new_pos = limit.checked_add_signed(m).unwrap();
+            let new_pos = p.checked_add_signed(m).unwrap_or_else(|| {
+                let adj_pos = p.checked_add_signed(limit.to_isize().unwrap() + m).unwrap();
                 // (limit - m.abs().try_into().unwrap()).try_into().unwrap();
-                new_pos
-            })
+                adj_pos
+            });
+            new_pos % limit
         }
     }
 }
@@ -71,34 +73,41 @@ pub fn part_1(
     run_parameter: &RunParams<UserParams>,
     monitor: Arc<Mutex<RuntimeMonitor<EmptyUserMonitor>>>,
 ) -> OutputPart1 {
-    let rows = if run_parameter.is_example {EX_ROWS} else {FULL_ROWS};
-    let cols = if run_parameter.is_example {EX_COLS} else {FULL_COLS};
+
+    let rows = if run_parameter.is_example { EX_ROWS } else { FULL_ROWS };
+    let cols = if run_parameter.is_example { EX_COLS } else { FULL_COLS };
+    let quads = add_quadrants(&input, rows, cols, 100, false);
+    // for i in 0..500 {
+    //     add_quadrants(&input, rows, cols, i);
+    // }
+    quads.into_values().reduce(|a, c| a * c).unwrap()
+}
+
+fn add_quadrants(input: &InputPart1, rows: usize, cols: usize, its: usize, print: bool) -> HashMap<(bool, bool), usize> {
     let mid_row = rows / 2;
     let mid_col = cols / 2;
-    println!("{mid_row}, {mid_col}");
     let mut quads: HashMap<(bool, bool), usize> = HashMap::new();
     let mut new_pos: HashMap<(usize, usize), usize> = HashMap::new();
     for robot in input {
-        let new_row = add(robot.pos.0, robot.v.0, rows, 100);
-        let new_col = add(robot.pos.1, robot.v.1, cols, 100);
+        let new_row = add(robot.pos.0, robot.v.0, rows, its);
+        let new_col = add(robot.pos.1, robot.v.1, cols, its);
         new_pos.entry((new_row, new_col)).or_insert(0).add_assign(1);
-        println!("p={:?}, v={:?}, => ({new_row}, {new_col})", robot.pos, robot.v);
         if new_row != mid_row && new_col != mid_col {
             let key = (new_row < mid_row, new_col < mid_col);
-            println!("Key = {key:?}");
             quads.entry(key).or_insert(0).add_assign(1);
         }
     }
-    for r in 0..rows {
-        for c in 0..cols {
-            let ch = new_pos.get(&(r, c)).map(|u| u.to_string()).unwrap_or(".".to_string());
-            print!("{}", ch);
+    if print {
+        for r in 0..rows {
+            for c in 0..cols {
+                let ch = new_pos.get(&(r, c)).map(|u| u.to_string()).unwrap_or(".".to_string());
+                print!("{}", ch);
+            }
+            print!("\n");
         }
         print!("\n");
     }
-
-    println!("{quads:?}");
-    quads.into_values().reduce(|a, c| a * c).unwrap()
+    quads
 }
 
 // If the puzzle requires a different input for part 2, this function can be updated
@@ -149,7 +158,15 @@ mod tests {
     #[test]
     fn test_add_neg_3() {
         let res = add(3, -3, 7, 100);
-        assert_eq!(res, 6);
+        assert_eq!(res, 4);
+    }
+
+    #[test]
+    fn test_mod() {
+        assert_eq!(-10 % 3, -1);
+        assert_eq!(-11 % 3, -2);
+        assert_eq!(-12 % 3, 0);
+        assert_eq!(-300 % 7, -6);
     }
 
     #[test]
