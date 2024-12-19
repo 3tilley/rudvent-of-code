@@ -62,11 +62,27 @@ pub enum Example<T> {
     Regex(String),
 }
 
-impl<T: Clone> Example<T> {
-    pub fn value(&self) -> T {
+impl<T: Output> Example<T> {
+    pub fn compare(&self, answer: &T) -> bool {
         match self {
-            Example::Value(v) => v.clone(),
-            Example::Regex(s) => unimplemented!(),
+            Example::Value(v) => answer == v,
+            Example::Regex(r) => todo!(),
+        }
+    }
+
+    pub fn is_default(&self) -> bool {
+        match self {
+            Example::Value(v) => *v == T::default(),
+            Example::Regex(r) => r == "",
+        }
+    }
+}
+
+impl<T: Output> ToString for Example<T> {
+    fn to_string(&self) -> String {
+        match self {
+            Example::Value(v) => format!("{}", v).to_string(),
+            Example::Regex(r) => format!("Regex({})", r).to_string(),
         }
     }
 }
@@ -138,7 +154,7 @@ pub struct ThreadedExecution<T, U: Output, X, Z> {
     input: String,
     prep_function: fn(String) -> T,
     run_function: fn(T, &RunParams<X>, Arc<Mutex<RuntimeMonitor<Z>>>) -> U,
-    example_check: Option<U>,
+    example_check: Option<Example<U>>,
 }
 
 impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 'static> Execution for ThreadedExecution<T, U, X, Z> {
@@ -166,7 +182,7 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
 }
 
 impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 'static> ThreadedExecution<T, U, X, Z> {
-    pub fn new(input: String, prep_function: fn(String) -> T, run_function: fn(T, &RunParams<X>, Arc<Mutex<RuntimeMonitor<Z>>>) -> U, example_check: Option<U>, run_params: RunParams<X>) -> Self {
+    pub fn new(input: String, prep_function: fn(String) -> T, run_function: fn(T, &RunParams<X>, Arc<Mutex<RuntimeMonitor<Z>>>) -> U, example_check: Option<Example<U>>, run_params: RunParams<X>) -> Self {
         Self {
             is_complete: false,
             run_start: None,
@@ -198,14 +214,14 @@ impl<T: 'static, U: Output + 'static, X: DayArguments + 'static, Z: Monitor + 's
             let res = match example_check {
                 None => Ok(result),
                 Some(example) => {
-                    if result == example {
+                    if example.compare(&result) {
                         Ok(result)
-                    } else if example == U::default() {
-                        Err(eyre!("Example didn't match (got {}), but example == {} which looks like a default. Did you update EXAMPLE_ANS?", result, example))
+                    } else if example.is_default() {
+                        Err(eyre!("Example didn't match (got {}), but example == {} which looks like a default. Did you update EXAMPLE_ANS?", result, example.to_string()))
                     } else {
                         Err(eyre!(
-                            "Example failed. Expected: {:?}, got: {:?}",
-                            example,
+                            "Example failed. Expected: {}, got: {}",
+                            example.to_string(),
                             result
                         ))
                     }

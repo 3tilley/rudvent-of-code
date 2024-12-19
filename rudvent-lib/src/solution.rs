@@ -137,13 +137,13 @@ impl<T:  'static, U: Output + 'static, V: 'static, W: Output + 'static, X: DayAr
 
     pub fn check_example_1(&mut self) -> Box<dyn ExecutionResult> {
         let input = self.day_data.example_1();
-        let mut execution = ThreadedExecution::new(input, self.prepare_part_1, self.calc_part_1, Some(self.example_part_1.value()), self.day_args.clone());
+        let mut execution = ThreadedExecution::new(input, self.prepare_part_1, self.calc_part_1, Some(self.example_part_1.clone()), self.day_args.clone());
         execution.run().join().unwrap()
     }
 
     pub fn check_example_2(&mut self) -> Box<dyn ExecutionResult> {
         let input = self.day_data.example_2();
-        let mut execution = ThreadedExecution::new(input, self.prepare_part_2, self.calc_part_2, Some(self.example_part_2.value()), self.day_args.clone());
+        let mut execution = ThreadedExecution::new(input, self.prepare_part_2, self.calc_part_2, Some(self.example_part_2.clone()), self.day_args.clone());
         execution.run().join().unwrap()
 
     }
