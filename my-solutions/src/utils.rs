@@ -28,15 +28,17 @@ impl Index<(usize, usize), (isize, isize)> for (usize, usize) {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct SparseArray<I: Index<I, O>, T, O> {
     data: HashMap<I, T>,
-    min_bounds: I,
-    max_bounds: I,
+    pub min_bounds: I,
+    pub max_bounds: I,
+    default: T,
     _offset: PhantomData<O>
 }
 
 impl<I: Index<I, O>, T, O> SparseArray<I, T, O> {
-    pub fn new(data: Vec<(I, T)>, max_bounds: I) -> Result<SparseArray<I, T, O>, I> {
+    pub fn new(data: Vec<(I, T)>, max_bounds: I, default: T) -> Result<SparseArray<I, T, O>, I> {
         let min_bounds = I::default_lower();
         for (i,v) in data.iter() {
             if !i.in_bounds(&min_bounds, &max_bounds) {
@@ -48,6 +50,7 @@ impl<I: Index<I, O>, T, O> SparseArray<I, T, O> {
             min_bounds,
             max_bounds,
             _offset: PhantomData,
+            default,
         };
         Ok(sparse)
     }
@@ -56,6 +59,17 @@ impl<I: Index<I, O>, T, O> SparseArray<I, T, O> {
         origin.offset(&offset, &self.min_bounds, &self.max_bounds)
     }
 
+    pub fn enumerate_iter(&self) -> impl Iterator<Item=(&I, &T)> {
+        self.data.iter()
+    }
+
+    pub fn get_with_default(&self, index: &I) -> Option<&T> {
+        if !index.in_bounds(&self.min_bounds, &self.max_bounds) {
+            None
+        } else {
+            Some(self.data.get(index).unwrap_or(&self.default))
+        }
+    }
 
 }
 
